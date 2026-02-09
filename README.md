@@ -10,7 +10,12 @@ This skill gives AI agents (Claude Code, OpenClaw, and others) the ability to fe
 
 ### OpenClaw
 
-Paste this repo URL in any OpenClaw chat. The bot handles installation and API key setup.
+```bash
+git clone https://github.com/balresch/santiment-api-skill.git
+openclaw plugins install ./santiment-api-skill
+```
+
+Restart the Gateway after installing. The plugin's `configSchema` will prompt for your API key in the Control UI. Once configured, your agent automatically gains access to the Santiment skill.
 
 ### Claude Code
 
