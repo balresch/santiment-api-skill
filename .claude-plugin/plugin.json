@@ -1,12 +1,11 @@
 {
   "name": "santiment-api",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Query the Santiment crypto analytics API for on-chain, financial, social, and development metrics across 2,000+ assets",
   "author": { "name": "Santiment" },
   "homepage": "https://academy.santiment.net/sanapi/",
   "license": "MIT",
   "keywords": ["santiment", "crypto", "graphql", "on-chain", "metrics", "blockchain"],
   "skills": "./skills/",
-  "commands": "./commands/",
-  "hooks": "./hooks/hooks.json"
+  "commands": "./commands/"
 }
