@@ -1,6 +1,6 @@
 # Santiment API Skill
 
-Teach your AI agent to query the Santiment GraphQL API — 750+ crypto metrics across 2,000+ assets.
+Teach your AI agent to query the Santiment GraphQL API — hundreds of crypto metrics across 2,000+ assets.
 
 ## What This Does
 
@@ -26,6 +26,15 @@ Then run the setup command to configure your API key:
 
 ```
 /santiment-api:setup
+```
+
+### Updating
+
+To get the latest version, update the marketplace first, then the plugin:
+
+```bash
+/plugin marketplace update santiment-api
+/plugin update santiment-api@santiment-api
 ```
 
 ## Get an API Key
