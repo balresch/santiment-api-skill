@@ -6,38 +6,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This repository is a **Claude Code plugin** that teaches AI agents how to use the Santiment GraphQL API — a crypto market data platform with 750+ metrics across 2,000+ assets. The plugin is designed to be consumed by Claude Code, OpenClaw bots, and other AI agents.
 
-## Repository Structure
-
-```
-santiment-api-skill/
-├── .claude-plugin/
-│   └── plugin.json                          # Claude Code plugin manifest
-├── openclaw.plugin.json                     # OpenClaw plugin manifest
-├── skills/
-│   └── santiment-graphql/
-│       ├── SKILL.md                         # Core skill (loaded on trigger)
-│       ├── references/
-│       │   ├── metrics-catalog.md           # Curated ~20 metrics by category
-│       │   └── rate-limits.md               # Tiers, complexity, optimization tips
-│       └── examples/
-│           └── query-patterns.md            # 4 varied GraphQL examples
-├── commands/
-│   ├── santiment-query.md                   # Guided query-building slash command
-│   └── setup.md                             # API key setup command
-├── hooks/
-│   ├── hooks.json                           # Hook configuration (SessionStart)
-│   └── load-api-key.sh                      # Loads API key into environment
-├── CLAUDE.md                                # This file
-├── README.md                                # Quick-start for humans + AI agents
-├── .env                                     # Dev API key (gitignored)
-├── .gitignore                               # Ignores .env and local settings
-└── .claude/
-    └── settings.local.json                  # Local settings
-```
+## Key Components
 
 - **SKILL.md** — Core skill file loaded when the skill triggers. Contains endpoint/auth, `getMetric` query pattern, dynamic discovery, error handling, and a query-building checklist.
 - **references/** — Loaded on demand. Detailed metrics catalog and rate limit documentation.
-- **examples/** — Loaded on demand. Four worked GraphQL examples with curl commands.
+- **examples/** — Loaded on demand. Five worked GraphQL examples with curl commands.
 - **commands/santiment-query.md** — Slash command (`/santiment-api:santiment-query`) that walks through query construction step by step.
 - **commands/setup.md** — Slash command (`/santiment-api:setup`) that configures the user's API key for persistent use.
 - **hooks/** — SessionStart hook that auto-loads the API key from `.claude/santiment-api.local.md` into `$SANTIMENT_API_KEY`.
@@ -74,22 +47,13 @@ SKILL.md uses platform-neutral wording (`If $SANTIMENT_API_KEY is set...`) so it
 - `openclaw.plugin.json` — OpenClaw only. Claude Code ignores this file.
 - `skills/`, `references/`, `examples/` — Shared across all platforms.
 
-## Key Santiment API Details (for context)
-
-- **Endpoint:** `https://api.santiment.net/graphql`
-- **Auth:** `Authorization: Apikey <key>` header
-- **Primary query:** `getMetric(metric: "...")` with sub-fields like `timeseriesData`, `aggregatedTimeseriesData`, `histogramData`
-- **Source docs:** https://academy.santiment.net/sanapi/
-- **GraphQL explorer:** https://api.santiment.net/graphiql
-- **Open source server:** https://github.com/santiment/sanbase2
-
 ## Internal Testing
 
-The dev API key is stored in `.env` (gitignored, never committed). Load it with `source .env` before running test commands.
+The dev API key is stored in `.env` (gitignored, never committed). Export it before running test commands.
 
 Test with:
 ```bash
-source .env
+export $(grep -v '^#' .env | xargs)
 curl -X POST https://api.santiment.net/graphql \
   -H "Content-Type: application/json" \
   -H "Authorization: Apikey $SANTIMENT_API_KEY" \
