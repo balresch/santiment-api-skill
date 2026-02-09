@@ -25,7 +25,7 @@ Your key is stored in `.claude/santiment-api.local.md`, which is gitignored and 
 
 3. Write the key to the local settings file:
 
-Write the file `.claude/santiment-api.local.md` with this exact content (replacing `<KEY>` with the user's key):
+Write the file `${CLAUDE_PLUGIN_ROOT}/.claude/santiment-api.local.md` with this exact content (replacing `<KEY>` with the user's key):
 
 ```
 ---
@@ -37,7 +37,7 @@ Santiment API key configured by /santiment-api:setup.
 
 4. Confirm success and instruct the user:
 
-> Your Santiment API key has been saved to `.claude/santiment-api.local.md`.
+> Your Santiment API key has been saved to the plugin's `.claude/santiment-api.local.md`.
 >
 > **Restart Claude Code** to activate the key. After restarting, the key will be automatically loaded as `$SANTIMENT_API_KEY` on every session start.
 >

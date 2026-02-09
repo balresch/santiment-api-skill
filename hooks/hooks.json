@@ -1,9 +1,11 @@
 {
-  "hooks": [
-    {
-      "event": "SessionStart",
-      "command": "${CLAUDE_PLUGIN_ROOT}/hooks/load-api-key.sh",
-      "timeout": 5000
-    }
-  ]
+  "hooks": {
+    "SessionStart": [
+      {
+        "type": "command",
+        "command": "${CLAUDE_PLUGIN_ROOT}/hooks/load-api-key.sh",
+        "timeout": 5000
+      }
+    ]
+  }
 }
