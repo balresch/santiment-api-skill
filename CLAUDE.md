@@ -21,8 +21,14 @@ santiment-api-skill/
 │       └── examples/
 │           └── query-patterns.md            # 4 varied GraphQL examples
 ├── commands/
-│   └── santiment-query.md                   # Guided query-building slash command
+│   ├── santiment-query.md                   # Guided query-building slash command
+│   └── setup.md                             # API key setup command
+├── hooks/
+│   ├── hooks.json                           # Hook configuration (SessionStart)
+│   └── load-api-key.sh                      # Loads API key into environment
 ├── CLAUDE.md                                # This file
+├── .env                                     # Dev API key (gitignored)
+├── .gitignore                               # Ignores .env and local settings
 └── .claude/
     └── settings.local.json                  # Local settings
 ```
@@ -31,6 +37,8 @@ santiment-api-skill/
 - **references/** — Loaded on demand. Detailed metrics catalog and rate limit documentation.
 - **examples/** — Loaded on demand. Four worked GraphQL examples with curl commands.
 - **commands/santiment-query.md** — Slash command (`/santiment-api:santiment-query`) that walks through query construction step by step.
+- **commands/setup.md** — Slash command (`/santiment-api:setup`) that configures the user's API key for persistent use.
+- **hooks/** — SessionStart hook that auto-loads the API key from `.claude/santiment-api.local.md` into `$SANTIMENT_API_KEY`.
 
 ## Working on the Plugin
 
@@ -55,16 +63,13 @@ When editing skill or reference files:
 
 ## Internal Testing
 
-API key for testing queries during development (do NOT include in the published skill file):
-
-```
-cabnxr3o66cyiygr_biyz63i3zuipf4sj
-```
+The dev API key is stored in `.env` (gitignored, never committed). Load it with `source .env` before running test commands.
 
 Test with:
 ```bash
+source .env
 curl -X POST https://api.santiment.net/graphql \
   -H "Content-Type: application/json" \
-  -H "Authorization: Apikey cabnxr3o66cyiygr_biyz63i3zuipf4sj" \
+  -H "Authorization: Apikey $SANTIMENT_API_KEY" \
   -d '{"query": "{ currentUser { id } }"}'
 ```

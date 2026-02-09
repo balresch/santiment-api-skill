@@ -50,18 +50,27 @@ Review rate limit considerations: @${CLAUDE_PLUGIN_ROOT}/skills/santiment-graphq
 
 ## Step 5: Build and Execute
 
-Construct the GraphQL query from the user's choices. Before executing, show the query to the user for confirmation.
+Construct the GraphQL query from the user's choices. For query structure reference, consult: @${CLAUDE_PLUGIN_ROOT}/skills/santiment-graphql/examples/query-patterns.md
 
-The user MUST provide their API key. Do not use any hardcoded key. If the user hasn't provided one, ask:
+Before executing, show the query to the user for confirmation.
 
-> I need your Santiment API key to execute this query. You can find it at https://app.santiment.net/account#api-keys. What is your API key?
+### API Key Resolution
+
+Check for the API key in this order:
+
+1. **Environment variable** — If `$SANTIMENT_API_KEY` is set (auto-loaded by the SessionStart hook when the user has run `/santiment-api:setup`), use it directly. Tell the user: "Using your saved Santiment API key."
+2. **Ask the user** — If `$SANTIMENT_API_KEY` is not set, ask:
+
+> I need your Santiment API key to execute this query. You can find it at https://app.santiment.net/account#api-keys.
+>
+> **Tip:** Run `/santiment-api:setup` to save your key so it loads automatically on every session.
 
 Execute the query using curl:
 
 ```
 curl -s -X POST https://api.santiment.net/graphql \
   -H "Content-Type: application/json" \
-  -H "Authorization: Apikey <USER_API_KEY>" \
+  -H "Authorization: Apikey <RESOLVED_API_KEY>" \
   -d '{"query": "<CONSTRUCTED_QUERY>"}'
 ```
 

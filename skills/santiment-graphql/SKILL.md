@@ -19,6 +19,8 @@ Query the Santiment API — a GraphQL platform providing 750+ metrics for 2,000+
 
 Every request requires an API key in the `Authorization` header. The user must provide their own key — never hardcode or assume one. All requests are HTTP `POST` with `Content-Type: application/json`. The request body is a JSON object with a `query` field and an optional `variables` field.
 
+If the plugin is installed and the user has run `/santiment-api:setup`, the key is available as `$SANTIMENT_API_KEY` (auto-loaded by the SessionStart hook). Otherwise, ask the user for their key.
+
 ```
 Authorization: Apikey <YOUR_API_KEY>
 ```
