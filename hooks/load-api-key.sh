@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # SessionStart hook: load Santiment API key from local settings into environment
 
-SETTINGS_FILE="${CLAUDE_PLUGIN_ROOT}/.claude/santiment-api.local.md"
+SETTINGS_FILE="$HOME/.claude/santiment-api.local.md"
 
 # Exit silently if settings file doesn't exist (user hasn't run /santiment-api:setup)
 if [ ! -f "$SETTINGS_FILE" ]; then

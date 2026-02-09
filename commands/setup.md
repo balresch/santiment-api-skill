@@ -1,6 +1,6 @@
 ---
 description: Configure your Santiment API key
-allowed-tools: Write, AskUserQuestion
+allowed-tools: Write, AskUserQuestion, Bash(curl:*)
 ---
 
 Set up the user's Santiment API key for persistent use across sessions.
@@ -25,7 +25,7 @@ Your key is stored in `.claude/santiment-api.local.md`, which is gitignored and 
 
 3. Write the key to the local settings file:
 
-Write the file `${CLAUDE_PLUGIN_ROOT}/.claude/santiment-api.local.md` with this exact content (replacing `<KEY>` with the user's key):
+Write the file `~/.claude/santiment-api.local.md` with this exact content (replacing `<KEY>` with the user's key):
 
 ```
 ---
@@ -35,9 +35,21 @@ api_key: "<KEY>"
 Santiment API key configured by /santiment-api:setup.
 ```
 
-4. Confirm success and instruct the user:
+4. Validate the key by making a lightweight API call:
 
-> Your Santiment API key has been saved to the plugin's `.claude/santiment-api.local.md`.
+```bash
+curl -s -X POST https://api.santiment.net/graphql \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Apikey <KEY>" \
+  -d '{"query": "{ currentUser { id } }"}'
+```
+
+- If the response contains `"currentUser"` with a non-null `id` → the key is valid. Proceed to step 5.
+- If the response contains an error or `currentUser` is null → warn the user their key appears invalid. Ask if they want to re-enter it (go back to step 1) or keep it anyway.
+
+5. Confirm success and instruct the user:
+
+> Your Santiment API key has been saved to `~/.claude/santiment-api.local.md` and validated successfully.
 >
 > **Restart Claude Code** to activate the key. After restarting, the key will be automatically loaded as `$SANTIMENT_API_KEY` on every session start.
 >

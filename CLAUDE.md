@@ -13,7 +13,7 @@ This repository is a **Claude Code plugin** that teaches AI agents how to use th
 - **examples/** — Loaded on demand. Five worked GraphQL examples with curl commands.
 - **commands/santiment-query.md** — Slash command (`/santiment-api:santiment-query`) that walks through query construction step by step.
 - **commands/setup.md** — Slash command (`/santiment-api:setup`) that configures the user's API key for persistent use.
-- **hooks/** — SessionStart hook that auto-loads the API key from `.claude/santiment-api.local.md` into `$SANTIMENT_API_KEY`.
+- **hooks/** — SessionStart hook that auto-loads the API key from `~/.claude/santiment-api.local.md` into `$SANTIMENT_API_KEY`.
 
 ## Working on the Plugin
 
@@ -35,7 +35,7 @@ This plugin supports both **Claude Code** and **OpenClaw** via dual manifests on
 
 | Platform | How `$SANTIMENT_API_KEY` gets set |
 |---|---|
-| Claude Code | SessionStart hook loads from `.claude/santiment-api.local.md`, or user runs `/santiment-api:setup` |
+| Claude Code | SessionStart hook loads from `~/.claude/santiment-api.local.md`, or user runs `/santiment-api:setup` |
 | OpenClaw | Plugin `configSchema.apiKey` + `primaryEnv` mapping sets the env var automatically |
 | Other agents | Agent asks the user for the key at runtime |
 
