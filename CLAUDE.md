@@ -28,6 +28,7 @@ santiment-api-skill/
 │   ├── hooks.json                           # Hook configuration (SessionStart)
 │   └── load-api-key.sh                      # Loads API key into environment
 ├── CLAUDE.md                                # This file
+├── README.md                                # Quick-start for humans + AI agents
 ├── .env                                     # Dev API key (gitignored)
 ├── .gitignore                               # Ignores .env and local settings
 └── .claude/
