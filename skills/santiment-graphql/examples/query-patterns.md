@@ -1,6 +1,6 @@
 # Santiment GraphQL Query Patterns
 
-Four examples demonstrating distinct API capabilities. Each uses a different sub-field or parameter pattern.
+Five examples demonstrating distinct API capabilities. Each uses a different sub-field or parameter pattern.
 
 ## 1. Timeseries — Daily Bitcoin Price
 
@@ -112,3 +112,64 @@ curl -s -X POST https://api.santiment.net/graphql \
   -H "Authorization: Apikey <YOUR_API_KEY>" \
   -d '{"query": "{ getMetric(metric: \"daily_active_addresses\") { aggregatedTimeseriesData(slug: \"cardano\", from: \"utc_now-30d\", to: \"utc_now\", aggregation: AVG) } }"}'
 ```
+
+## 5. Discovery Workflow — Finding and Querying an Unknown Metric
+
+Demonstrates the full discovery flow when the user asks for data and you don't know the exact metric name. Scenario: "How much ETH do the top 100 holders own?"
+
+**Step 1 — Fetch all metrics and search by keyword.**
+
+```graphql
+{
+  getAvailableMetrics
+}
+```
+
+The response is a flat array of 750+ strings. Search this list for keywords matching the user's intent: `holder`, `top`, `amount`. Matches include `amount_in_top_holders`, `holders_distribution_combined_balance`, and others.
+
+**Step 2 — Inspect metadata for the best candidate.**
+
+```graphql
+{
+  getMetric(metric: "amount_in_top_holders") {
+    metadata {
+      availableSlugs
+      availableSelectors
+      defaultAggregation
+      minInterval
+      dataType
+    }
+  }
+}
+```
+
+The metadata reveals this metric supports `slug: "ethereum"` and requires a `holdersCount` field in the selector. The minimum interval is `1d`.
+
+**Step 3 — Query with the correct parameters.**
+
+```graphql
+{
+  getMetric(metric: "amount_in_top_holders") {
+    timeseriesData(
+      selector: { slug: "ethereum", holdersCount: 100 }
+      from: "utc_now-30d"
+      to: "utc_now"
+      interval: "1d"
+    ) {
+      datetime
+      value
+    }
+  }
+}
+```
+
+**curl:**
+
+```bash
+curl -s -X POST https://api.santiment.net/graphql \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Apikey <YOUR_API_KEY>" \
+  -d '{"query": "{ getMetric(metric: \"amount_in_top_holders\") { timeseriesData(selector: { slug: \"ethereum\", holdersCount: 100 }, from: \"utc_now-30d\", to: \"utc_now\", interval: \"1d\") { datetime value } } }"}'
+```
+
+This example demonstrates the full discovery flow: search the metric list by keywords, inspect metadata to learn required selectors, then construct the query with the correct parameters. The `holdersCount` selector would not have been obvious without the metadata step.

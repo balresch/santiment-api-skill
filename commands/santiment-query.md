@@ -9,7 +9,7 @@ Load the skill reference: @${CLAUDE_PLUGIN_ROOT}/skills/santiment-graphql/SKILL.
 
 ## Step 1: Choose a Metric
 
-Ask the user which metric they want to query. If they're unsure, offer common options:
+Ask the user what data they want. If they name a specific metric, use it. If they're unsure, offer common options:
 - `price_usd` — asset price
 - `daily_active_addresses` — on-chain activity
 - `exchange_inflow` / `exchange_outflow` — exchange flows
@@ -17,9 +17,7 @@ Ask the user which metric they want to query. If they're unsure, offer common op
 - `social_volume_total` — social mentions
 - `dev_activity` — development activity
 
-For the full catalog, read: @${CLAUDE_PLUGIN_ROOT}/skills/santiment-graphql/references/metrics-catalog.md
-
-If the user describes data they want but doesn't know the metric name, suggest the best match from the catalog.
+If the user describes data that doesn't match one of the above, use the keyword map in @${CLAUDE_PLUGIN_ROOT}/skills/santiment-graphql/references/metrics-catalog.md to find search terms, then fetch `getAvailableMetrics` from the API, search the result for those keywords, and present the best 2-3 candidates to the user. Once a metric is selected, fetch its `metadata` to learn required selectors and minimum interval before proceeding.
 
 ## Step 2: Choose an Asset (Slug)
 

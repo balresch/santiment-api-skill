@@ -49,7 +49,7 @@ The plugin is purely documentation (Markdown + JSON manifest). There is no build
 When editing skill or reference files:
 - The audience is an AI agent, not a human developer. Write instructions the way you'd want to receive them.
 - Keep the focus on **GraphQL only** — no Python SDK, no Sansheets, no R wrappers.
-- The core metrics table is a curated subset. The full list (750+) is discoverable via `getAvailableMetrics`. Don't try to enumerate all metrics.
+- `metrics-catalog.md` contains a keyword-concept mapping table (for translating user intent into metric name search terms) and a curated quick-reference of ~20 common metrics. The full list (750+) is discoverable via `getAvailableMetrics`. Don't try to enumerate all metrics; instead, maintain the keyword map to cover new concept clusters.
 - Every example should demonstrate a distinct API capability (different sub-field, parameter, or pattern). Avoid redundant examples.
 - Rate limit and complexity information is critical — agents burn through quotas fast without it.
 - SKILL.md should stay in the 1,500–1,800 word range. Move detailed content to `references/`.

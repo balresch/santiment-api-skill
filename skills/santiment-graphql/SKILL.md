@@ -109,11 +109,9 @@ Transforms reduce the number of returned data points by N-1 for moving averages.
 
 ## Dynamic Discovery
 
-Use these queries to discover metrics, slugs, and data availability at runtime. Always prefer dynamic discovery over hardcoded values when working with unfamiliar metrics or assets.
+When you don't know the exact metric name for a user's request, follow this 3-step workflow. Always prefer dynamic discovery over hardcoded values.
 
-### List all available metrics
-
-Returns the full list of 750+ metric name strings:
+### Step 1 — Fetch the metric list
 
 ```graphql
 {
@@ -121,21 +119,19 @@ Returns the full list of 750+ metric name strings:
 }
 ```
 
-Filter to metrics available on a specific plan:
+Returns a flat array of 1,000+ descriptive `snake_case` strings (e.g., `"daily_active_addresses"`, `"exchange_inflow"`, `"mvrv_usd"`). Filter by plan with `getAvailableMetrics(product: SANAPI, plan: BUSINESS_PRO)`.
+
+### Step 2 — Search by keywords
+
+Metric names contain semantic tokens. Split the user's intent into keywords and scan the list for matches. Example: user asks about whale activity → search for `holder`, `top`, `whale`, `supply`, `amount_in`. See `references/metrics-catalog.md` for the full intent-to-keyword mapping across 12 categories.
+
+### Step 3 — Inspect metadata before querying
+
+Once you have candidate metrics, fetch metadata to confirm compatibility:
 
 ```graphql
 {
-  getAvailableMetrics(product: SANAPI, plan: BUSINESS_PRO)
-}
-```
-
-### Get metadata for a metric
-
-Before querying an unfamiliar metric, fetch its metadata to learn which slugs it supports, what aggregations are valid, the minimum interval, and the data type:
-
-```graphql
-{
-  getMetric(metric: "daily_active_addresses") {
+  getMetric(metric: "amount_in_top_holders") {
     metadata {
       availableSlugs
       availableAggregations
@@ -148,7 +144,7 @@ Before querying an unfamiliar metric, fetch its metadata to learn which slugs it
 }
 ```
 
-The `minInterval` field is especially important — requesting a smaller interval than the metric supports will return an error.
+This reveals required selectors (e.g., `holdersCount`), supported slugs, and minimum interval. Requesting a smaller interval than `minInterval` returns an error. See `examples/query-patterns.md` example 5 for a worked discovery workflow.
 
 ### Find a project's slug
 
@@ -242,7 +238,7 @@ The one exception to the HTTP 200 rule is rate limiting: HTTP **429** means the 
 
 Follow these steps to construct any Santiment API query:
 
-1. **Pick a metric** — select from the metrics catalog (`references/metrics-catalog.md`), or discover dynamically with `getAvailableMetrics`. If unsure which metric fits the user's request, search the available metrics list for keywords.
+1. **Pick a metric** — if you know the exact metric name, use it directly. Otherwise, follow the Discovery Workflow above: fetch `getAvailableMetrics`, search for keywords matching the user's intent (see the keyword map in `references/metrics-catalog.md`), then inspect metadata to confirm compatibility.
 2. **Pick a slug** — the asset identifier (e.g., `"bitcoin"`, `"ethereum"`). If the user provides a ticker or name, resolve it with `projectBySlug` or `allProjects`.
 3. **Pick a time range** — set `from` and `to` using relative expressions like `"utc_now-30d"` (preferred) or ISO 8601 timestamps. Check `availableSince` to ensure data exists for the range.
 4. **Pick an interval** — `"1d"` for daily, `"1h"` for hourly, `"7d"` for weekly. Larger intervals reduce complexity and quota usage.
@@ -255,6 +251,6 @@ After constructing the query, execute it via curl with the user's API key and pa
 
 Consult these reference files for detailed information:
 
-- **Metrics catalog** — `references/metrics-catalog.md` — curated list of ~20 commonly used metrics across 7 categories (Financial, On-Chain, Exchange, Valuation, Social, Development, Supply)
+- **Metrics catalog** — `references/metrics-catalog.md` — keyword-to-metric mapping for translating user intent into search terms, plus 20 curated quick-reference metrics and naming conventions
 - **Rate limits** — `references/rate-limits.md` — tier limits, complexity scoring, and optimization strategies to avoid quota exhaustion
-- **Query patterns** — `examples/query-patterns.md` — 4 worked examples with both GraphQL and curl, each demonstrating a distinct API capability
+- **Query patterns** — `examples/query-patterns.md` — 5 worked examples with both GraphQL and curl, including a full discovery workflow
