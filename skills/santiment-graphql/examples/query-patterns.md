@@ -119,13 +119,17 @@ Demonstrates the full discovery flow when the user asks for data and you don't k
 
 **Step 1 — Fetch all metrics and search by keyword.**
 
-```graphql
-{
-  getAvailableMetrics
-}
+The response is large (1,000+ metrics), so save it to a file:
+
+```bash
+curl -s -X POST https://api.santiment.net/graphql \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Apikey <YOUR_API_KEY>" \
+  -d '{"query": "{ getAvailableMetrics }"}' \
+  -o /tmp/santiment-metrics.json
 ```
 
-The response is a flat array of 750+ strings. Search this list for keywords matching the user's intent: `holder`, `top`, `amount`. Matches include `amount_in_top_holders`, `holders_distribution_combined_balance`, and others.
+Then search the file for keywords matching the user's intent: `holder`, `top`, `amount`. Matches include `amount_in_top_holders`, `holders_distribution_combined_balance`, and others.
 
 **Step 2 — Inspect metadata for the best candidate.**
 

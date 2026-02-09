@@ -119,11 +119,21 @@ When you don't know the exact metric name for a user's request, follow this 3-st
 }
 ```
 
-Returns a flat array of 1,000+ descriptive `snake_case` strings (e.g., `"daily_active_addresses"`, `"exchange_inflow"`, `"mvrv_usd"`). Filter by plan with `getAvailableMetrics(product: SANAPI, plan: BUSINESS_PRO)`.
+Returns 1,000+ `snake_case` strings. **The response is large** — save to a file, don't pipe through stdin:
+
+```bash
+curl -s -X POST https://api.santiment.net/graphql \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Apikey <YOUR_API_KEY>" \
+  -d '{"query": "{ getAvailableMetrics }"}' \
+  -o /tmp/santiment-metrics.json
+```
+
+Filter by plan with `getAvailableMetrics(product: SANAPI, plan: BUSINESS_PRO)`.
 
 ### Step 2 — Search by keywords
 
-Metric names contain semantic tokens. Split the user's intent into keywords and scan the list for matches. Example: user asks about whale activity → search for `holder`, `top`, `whale`, `supply`, `amount_in`. See `references/metrics-catalog.md` for the full intent-to-keyword mapping across 12 categories.
+Search the saved file for keywords matching user intent. Example: whale activity → search for `holder`, `top`, `whale`, `supply`, `amount_in`. See `references/metrics-catalog.md` for intent-to-keyword mappings.
 
 ### Step 3 — Inspect metadata before querying
 
@@ -144,7 +154,7 @@ Once you have candidate metrics, fetch metadata to confirm compatibility:
 }
 ```
 
-This reveals required selectors (e.g., `holdersCount`), supported slugs, and minimum interval. Requesting a smaller interval than `minInterval` returns an error. See `examples/query-patterns.md` example 5 for a worked discovery workflow.
+This reveals required selectors (e.g., `holdersCount`), supported slugs, and minimum interval. Requesting a smaller interval than `minInterval` returns an error. See `examples/query-patterns.md` example 5 for a worked example.
 
 ### Find a project's slug
 
