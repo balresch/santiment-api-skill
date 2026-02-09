@@ -6,6 +6,7 @@ description: >
   "fetch Bitcoin price from Santiment", "use the Santiment API", or needs to access
   cryptocurrency market data via the Santiment GraphQL API.
 version: 1.0.0
+metadata: {"openclaw":{"emoji":"📊","requires":{"env":["SANTIMENT_API_KEY"]},"primaryEnv":"SANTIMENT_API_KEY"}}
 ---
 
 # Santiment GraphQL API
@@ -19,7 +20,7 @@ Query the Santiment API — a GraphQL platform providing 750+ metrics for 2,000+
 
 Every request requires an API key in the `Authorization` header. The user must provide their own key — never hardcode or assume one. All requests are HTTP `POST` with `Content-Type: application/json`. The request body is a JSON object with a `query` field and an optional `variables` field.
 
-If the plugin is installed and the user has run `/santiment-api:setup`, the key is available as `$SANTIMENT_API_KEY` (auto-loaded by the SessionStart hook). Otherwise, ask the user for their key.
+If `$SANTIMENT_API_KEY` is set in the environment, use it directly. Otherwise, ask the user for their key. The key can be obtained at https://app.santiment.net/account#api-keys (free tier available).
 
 ```
 Authorization: Apikey <YOUR_API_KEY>

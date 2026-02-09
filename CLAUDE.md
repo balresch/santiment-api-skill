@@ -11,7 +11,8 @@ This repository is a **Claude Code plugin** that teaches AI agents how to use th
 ```
 santiment-api-skill/
 ├── .claude-plugin/
-│   └── plugin.json                          # Plugin manifest
+│   └── plugin.json                          # Claude Code plugin manifest
+├── openclaw.plugin.json                     # OpenClaw plugin manifest
 ├── skills/
 │   └── santiment-graphql/
 │       ├── SKILL.md                         # Core skill (loaded on trigger)
@@ -51,6 +52,26 @@ When editing skill or reference files:
 - Every example should demonstrate a distinct API capability (different sub-field, parameter, or pattern). Avoid redundant examples.
 - Rate limit and complexity information is critical — agents burn through quotas fast without it.
 - SKILL.md should stay in the 1,500–1,800 word range. Move detailed content to `references/`.
+
+## Platform Compatibility
+
+This plugin supports both **Claude Code** and **OpenClaw** via dual manifests on `main`. The two manifests don't collide — Claude Code reads `.claude-plugin/plugin.json`, OpenClaw reads `openclaw.plugin.json`. Shared content (SKILL.md, references, examples) is used by both platforms without duplication.
+
+**API key configuration by platform:**
+
+| Platform | How `$SANTIMENT_API_KEY` gets set |
+|---|---|
+| Claude Code | SessionStart hook loads from `.claude/santiment-api.local.md`, or user runs `/santiment-api:setup` |
+| OpenClaw | Plugin `configSchema.apiKey` + `primaryEnv` mapping sets the env var automatically |
+| Other agents | Agent asks the user for the key at runtime |
+
+SKILL.md uses platform-neutral wording (`If $SANTIMENT_API_KEY is set...`) so it works everywhere.
+
+**Platform-specific components:**
+- `commands/` — Claude Code only (slash commands). OpenClaw ignores these.
+- `hooks/` — Claude Code only (SessionStart hook). OpenClaw ignores these.
+- `openclaw.plugin.json` — OpenClaw only. Claude Code ignores this file.
+- `skills/`, `references/`, `examples/` — Shared across all platforms.
 
 ## Key Santiment API Details (for context)
 
