@@ -25,7 +25,7 @@ Your key is stored in `.claude/santiment-api.local.md`, which is gitignored and 
 
 3. Write the key to the local settings file:
 
-Write the file `~/.claude/santiment-api.local.md` with this exact content (replacing `<KEY>` with the user's key):
+Resolve `$HOME` to an absolute path (e.g., `/home/username`), then write the file `$HOME/.claude/santiment-api.local.md` with this exact content (replacing `<KEY>` with the user's key):
 
 ```
 ---
@@ -49,7 +49,7 @@ curl -s -X POST https://api.santiment.net/graphql \
 
 5. Confirm success and instruct the user:
 
-> Your Santiment API key has been saved to `~/.claude/santiment-api.local.md` and validated successfully.
+> Your Santiment API key has been saved to `$HOME/.claude/santiment-api.local.md` and validated successfully.
 >
 > **Restart Claude Code** to activate the key. After restarting, the key will be automatically loaded as `$SANTIMENT_API_KEY` on every session start.
 >
