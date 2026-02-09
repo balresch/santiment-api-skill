@@ -5,5 +5,8 @@
   "author": { "name": "Santiment" },
   "homepage": "https://academy.santiment.net/sanapi/",
   "license": "MIT",
-  "keywords": ["santiment", "crypto", "graphql", "on-chain", "metrics", "blockchain"]
+  "keywords": ["santiment", "crypto", "graphql", "on-chain", "metrics", "blockchain"],
+  "skills": "./skills/",
+  "commands": "./commands/",
+  "hooks": "./hooks/hooks.json"
 }
