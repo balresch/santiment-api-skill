@@ -15,7 +15,7 @@ Paste this repo URL in any OpenClaw chat. The bot handles installation and API k
 ### Claude Code
 
 ```bash
-claude plugin add <this-repo-url>
+claude plugin add https://github.com/balresch/santiment-api-skill
 ```
 
 Then run the setup command to configure your API key:
