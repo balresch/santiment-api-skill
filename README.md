@@ -10,30 +10,7 @@ This skill gives AI agents (Claude Code, OpenClaw, and others) the ability to fe
 
 ### OpenClaw
 
-**Option 1 — Paste the repo URL** in any OpenClaw chat. The bot will read this repo and guide you through setup.
-
-**Option 2 — CLI install:**
-
-```bash
-npx clawhub@latest install santiment-graphql
-```
-
-**Option 3 — Manual:** Copy `skills/santiment-graphql/` into your skills directory and add the config below.
-
-After installing, configure your API key in `~/.openclaw/openclaw.json`:
-
-```json
-{
-  "skills": {
-    "entries": {
-      "santiment-graphql": {
-        "enabled": true,
-        "apiKey": "YOUR_SANTIMENT_API_KEY"
-      }
-    }
-  }
-}
-```
+Paste this repo URL in any OpenClaw chat. The bot handles installation and API key setup.
 
 ### Claude Code
 
