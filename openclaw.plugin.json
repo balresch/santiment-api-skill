@@ -2,7 +2,7 @@
   "id": "santiment-api",
   "name": "Santiment API",
   "description": "Query the Santiment crypto analytics API for on-chain, financial, social, and development metrics across 2,000+ assets",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "skills": ["skills/santiment-graphql"],
   "configSchema": {
     "type": "object",
