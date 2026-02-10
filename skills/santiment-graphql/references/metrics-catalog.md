@@ -52,3 +52,89 @@ Twenty commonly used metrics for the most frequent query types. Use these direct
 ## Naming Conventions
 
 Metric names use `snake_case`. Prefixes indicate category (`exchange_`, `social_`, `dev_`, `holders_`). Suffixes indicate denomination or scope (`_usd`, `_btc`, `_total`). The `_intraday` suffix marks higher-frequency variants of daily metrics (e.g., `mvrv_usd_intraday`). Wildcard patterns like `holders_distribution_*` cover families of related sub-metrics with different selector parameters.
+
+## Chain Coverage and Ghost Data
+
+On-chain metrics are computed only for blockchains that Santiment indexes. When a token's primary chain is not indexed, on-chain queries return **empty timeseries `[]` without any error**. The agent may incorrectly conclude "no activity detected" — this is the "ghost data" problem.
+
+### Which Metrics Are Chain-Dependent?
+
+| Category | Chain-dependent? | Examples |
+|---|---|---|
+| On-chain activity | **YES** | `daily_active_addresses`, `transaction_volume`, `network_growth`, `velocity` |
+| Exchange flows | **YES** | `exchange_inflow`, `exchange_outflow`, `exchange_balance` |
+| Supply / holder metrics | **YES** | `amount_in_top_holders`, `holders_distribution_*`, `percent_of_total_supply_on_exchanges` |
+| Token age / movement | **YES** | `token_age_consumed`, `dormant_circulation_*`, `token_circulation` |
+| Valuation ratios | **YES** | `mvrv_usd`, `nvt` (derived from on-chain data) |
+| Financial (price/volume) | **NO** | `price_usd`, `volume_usd`, `marketcap_usd` |
+| Social | **NO** | `social_volume_total`, `social_dominance_total` |
+| Development | **NO** | `dev_activity`, `dev_activity_contributors_count` |
+
+Financial, social, and development metrics are aggregated from off-chain sources (exchanges, social platforms, GitHub) and work for any listed token regardless of blockchain.
+
+### Reactive Diagnostic Flow
+
+Run these checks **only when `timeseriesData` returns `[]` without errors**. Do not run them preemptively on every query.
+
+**Step 1 — Check data availability timestamps:**
+
+```graphql
+{
+  getMetric(metric: "daily_active_addresses") {
+    availableSince(slug: "trust-wallet-token")
+    lastDatetimeComputedAt(slug: "trust-wallet-token")
+  }
+}
+```
+
+If `availableSince` returns `1970-01-01T00:00:00Z` (Unix epoch), the metric has **never been computed** for this slug. This confirms the empty result is not a temporary gap — the data does not exist.
+
+**Step 2 — Identify the token's blockchain:**
+
+```graphql
+{
+  projectBySlug(slug: "trust-wallet-token") {
+    slug
+    name
+    ticker
+    infrastructure
+  }
+}
+```
+
+The `infrastructure` field reveals the token's primary chain (e.g., `"BEP20"`, `"SOL"`, `"ETH"`). If the chain is not one Santiment indexes for on-chain data, that explains the empty result.
+
+**Step 3 — Pivot to chain-agnostic metrics:**
+
+Query financial, social, or development metrics instead — these work regardless of blockchain:
+
+```graphql
+{
+  getMetric(metric: "price_usd") {
+    availableSince(slug: "trust-wallet-token")
+  }
+}
+```
+
+A real date (not epoch) confirms this metric has data for the token.
+
+### Decision Tree
+
+```
+timeseriesData returns [] and no errors?
+├─ YES → Check availableSince for this metric + slug
+│   ├─ Returns epoch (1970-01-01) → Metric never computed for this slug
+│   │   ├─ Check projectBySlug { infrastructure }
+│   │   ├─ Report: "On-chain metric X is not available for [token] ([chain])"
+│   │   └─ Offer chain-agnostic alternatives (price, social, dev metrics)
+│   └─ Returns real date → Data gap; widen time range or check lastDatetimeComputedAt
+└─ NO → Process data normally
+```
+
+### Communication Guidance
+
+When an on-chain metric returns empty data due to chain coverage:
+
+- **NEVER** say "no activity detected" or "zero on-chain activity" — this is factually wrong
+- **DO** say: "[Metric] is not available for [token] because Santiment does not index on-chain data for [chain]. Here is what IS available: [price/social/dev data]."
+- Always offer to query alternative metrics that do have data for the token

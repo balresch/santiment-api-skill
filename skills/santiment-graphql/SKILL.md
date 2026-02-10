@@ -70,7 +70,7 @@ Choose exactly one sub-field per `getMetric` call:
 | `aggregatedTimeseriesData` | Single numeric value | Need one summary number (average, sum, last value) over a time range. Lowest complexity, most quota-friendly. |
 | `histogramData` | Array of bucketed ranges | Distribution data — e.g., how much ETH was bought at each price range. Less commonly needed. |
 | `metadata` | Metric metadata object | Discover available slugs, aggregations, selectors, intervals, and data type for a metric. Call this before querying an unfamiliar metric. |
-| `availableSince` | ISO 8601 date string | Check how far back data exists for a given metric and slug. Prevents wasted calls on empty time ranges. |
+| `availableSince` | ISO 8601 date string | Check how far back data exists for a given metric and slug. Prevents wasted calls on empty time ranges. A return value of `1970-01-01T00:00:00Z` means the metric has **never been computed** for this slug. |
 | `lastDatetimeComputedAt` | ISO 8601 timestamp | Check data freshness — when the metric was last computed for a slug. |
 
 ### Parameters
@@ -218,7 +218,7 @@ Understand what historical range your API key can access for each metric. Call t
 
 ## Error Handling
 
-The Santiment API always returns HTTP **200**, even when there are application-level errors. Never rely on HTTP status codes alone — always parse the response JSON and check for the `errors` array.
+The API always returns HTTP **200**, even for errors. Always parse the JSON and check for the `errors` array.
 
 A typical error response:
 
@@ -234,7 +234,7 @@ A typical error response:
 }
 ```
 
-When the `data` field contains `null` and the `errors` array is present, the query failed. The `message` field describes the problem. Common errors and how to resolve them:
+When `data` contains `null` and `errors` is present, the query failed. Common errors:
 
 | Error | Cause | Fix |
 |---|---|---|
@@ -244,21 +244,25 @@ When the `data` field contains `null` and the `errors` array is present, the que
 | Time range restricted | Historical range exceeds plan allowance | Check `getAccessRestrictions` |
 | Complexity too high | Query requests too many data points | Reduce time range, increase interval, or fetch fewer fields |
 | HTTP 429 | Rate limit exceeded | Back off exponentially and retry after a delay |
+| Empty timeseries (no error) | On-chain metric not computed for this asset's chain | Check `availableSince` for epoch, then `projectBySlug { infrastructure }`. See `references/metrics-catalog.md` Ghost Data section. |
 
-The one exception to the HTTP 200 rule is rate limiting: HTTP **429** means the account's quota is exhausted. See `references/rate-limits.md` for tier details and optimization strategies.
+**Empty data is not the same as zero data.** When `timeseriesData` returns `[]` without errors, do NOT tell the user there is no activity. On-chain metrics are only computed for indexed chains. Check `references/metrics-catalog.md` Ghost Data section for the diagnostic flow.
+
+The one exception to the HTTP 200 rule is rate limiting: HTTP **429** means the account's quota is exhausted. See `references/rate-limits.md` for details.
 
 ## Quick Reference: Building a Query
 
 Follow these steps to construct any Santiment API query:
 
-1. **Pick a metric** — use directly if known, otherwise follow the Discovery Workflow above.
-2. **Pick a slug** — e.g., `"bitcoin"`. Resolve names/tickers via `projectBySlug` or `allProjects`.
-3. **Pick a time range** — `from`/`to` with relative expressions (preferred) or ISO 8601. Check `availableSince` first.
+1. **Pick a metric** — use directly if known, otherwise follow Discovery Workflow.
+2. **Pick a slug** — resolve names/tickers via `projectBySlug` or `allProjects`.
+3. **Pick a time range** — relative expressions preferred. Check `availableSince` first.
 4. **Pick an interval** — `"1d"`, `"1h"`, `"7d"`. Larger intervals reduce complexity.
-5. **Pick a sub-field** — `timeseriesData` for series, `aggregatedTimeseriesData` for a single value, `timeseriesDataPerSlugJson` for multi-asset.
+5. **Pick a sub-field** — `timeseriesData` for series, `aggregatedTimeseriesData` for single value, `timeseriesDataPerSlugJson` for multi-asset.
 6. **Optionally add** — `transform`, `selector` (instead of `slug`), or `aggregation` override.
+7. **If data is empty** — check `availableSince` for epoch. If epoch, the metric isn't computed for this slug's chain. Report unavailability and suggest alternative metrics.
 
-After constructing the query, execute it via curl with the user's API key and parse the JSON response. Always check for the `errors` array before processing `data`.
+Execute via curl with the user's API key and parse the JSON response. Always check for the `errors` array before processing `data`.
 
 ## Additional Resources
 
@@ -266,4 +270,4 @@ Consult these reference files for detailed information:
 
 - **Metrics catalog** — `references/metrics-catalog.md` — keyword-to-metric mapping for translating user intent into search terms, plus 20 curated quick-reference metrics and naming conventions
 - **Rate limits** — `references/rate-limits.md` — tier limits, complexity scoring, and optimization strategies to avoid quota exhaustion
-- **Query patterns** — `examples/query-patterns.md` — 5 worked examples with both GraphQL and curl, including a full discovery workflow
+- **Query patterns** — `examples/query-patterns.md` — 6 worked examples with both GraphQL and curl, including discovery workflow and ghost data diagnostics

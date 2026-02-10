@@ -1,6 +1,6 @@
 # Santiment GraphQL Query Patterns
 
-Five examples demonstrating distinct API capabilities. Each uses a different sub-field or parameter pattern. All curl commands use GraphQL variables with a heredoc to avoid quote-escaping issues.
+Six examples demonstrating distinct API capabilities. Each uses a different sub-field or parameter pattern. All curl commands use GraphQL variables with a heredoc to avoid quote-escaping issues.
 
 ## 1. Timeseries — Daily Bitcoin Price
 
@@ -233,3 +233,89 @@ QUERY
 ```
 
 This example demonstrates the full discovery flow: search the metric list by keywords, inspect metadata to learn required selectors, then construct the query with the correct parameters. The `holdersCount` selector would not have been obvious without the metadata step.
+
+## 6. Ghost Data Detection — Diagnosing Empty On-Chain Results
+
+Demonstrates the reactive diagnostic flow when an on-chain metric returns empty data for a token on a non-indexed chain. Scenario: "Show me daily active addresses for Trust Wallet Token (TWT)."
+
+**Step 1 — Normal query returns empty `[]`.**
+
+```graphql
+{
+  getMetric(metric: "daily_active_addresses") {
+    timeseriesData(
+      slug: "trust-wallet-token"
+      from: "utc_now-30d"
+      to: "utc_now"
+      interval: "1d"
+    ) {
+      datetime
+      value
+    }
+  }
+}
+```
+
+Response: `{ "data": { "getMetric": { "timeseriesData": [] } } }` — no error, just empty data.
+
+**Step 2 — Check `availableSince` and identify the token's chain.**
+
+Combine the diagnostic checks into a single API call:
+
+```graphql
+{
+  getMetric(metric: "daily_active_addresses") {
+    availableSince(slug: "trust-wallet-token")
+    lastDatetimeComputedAt(slug: "trust-wallet-token")
+  }
+  projectBySlug(slug: "trust-wallet-token") {
+    name
+    ticker
+    infrastructure
+  }
+}
+```
+
+Response reveals:
+- `availableSince`: `"1970-01-01T00:00:00Z"` — **epoch = never computed**
+- `infrastructure`: `"BEP20"` — TWT lives on BNB Chain, not indexed for on-chain metrics
+
+**curl (combined diagnostic):**
+
+```bash
+curl -s -X POST https://api.santiment.net/graphql \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Apikey $SANTIMENT_API_KEY" \
+  -d @- << 'QUERY'
+{
+  "query": "{ getMetric(metric: \"daily_active_addresses\") { availableSince(slug: \"trust-wallet-token\") lastDatetimeComputedAt(slug: \"trust-wallet-token\") } projectBySlug(slug: \"trust-wallet-token\") { name ticker infrastructure } }"
+}
+QUERY
+```
+
+**Step 3 — Pivot to a chain-agnostic metric.**
+
+```graphql
+{
+  getMetric(metric: "price_usd") {
+    availableSince(slug: "trust-wallet-token")
+    timeseriesData(
+      slug: "trust-wallet-token"
+      from: "utc_now-7d"
+      to: "utc_now"
+      interval: "1d"
+    ) {
+      datetime
+      value
+    }
+  }
+}
+```
+
+`availableSince` returns a real date (not epoch), and `timeseriesData` returns actual price data — confirming the token has financial data even though on-chain metrics are unavailable.
+
+**Example user-facing response:**
+
+> Daily active addresses is not available for Trust Wallet Token (TWT) because Santiment does not index on-chain data for BEP-20 tokens. However, I can provide price, trading volume, social, and development metrics. Here's the TWT price for the last 7 days: [data]
+
+This example demonstrates the ghost data diagnostic flow: detect empty results, confirm via `availableSince` epoch check, identify the chain, and pivot to available metrics. See `references/metrics-catalog.md` Ghost Data section for the full decision tree.
