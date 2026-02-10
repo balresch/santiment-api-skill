@@ -1,6 +1,6 @@
 {
   "name": "santiment-api",
-  "version": "1.1.3",
+  "version": "1.1.4",
   "description": "Query the Santiment crypto analytics API for on-chain, financial, social, and development metrics across 2,000+ assets",
   "author": { "name": "Santiment" },
   "homepage": "https://academy.santiment.net/sanapi/",
