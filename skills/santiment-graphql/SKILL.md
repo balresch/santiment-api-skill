@@ -18,33 +18,41 @@ Query the Santiment API — a GraphQL platform providing 750+ metrics for 2,000+
 - **GraphQL endpoint:** `https://api.santiment.net/graphql`
 - **Interactive explorer:** `https://api.santiment.net/graphiql`
 
-Every request requires an API key in the `Authorization` header. The user must provide their own key — never hardcode or assume one. All requests are HTTP `POST` with `Content-Type: application/json`. The request body is a JSON object with a `query` field and an optional `variables` field.
+Every request requires an API key in the `Authorization` header (`Authorization: Apikey <KEY>`). The user must provide their own key — never hardcode or assume one. If `$SANTIMENT_API_KEY` is set in the environment, use it directly. Otherwise, ask the user for their key (free tier available at https://app.santiment.net/account#api-keys).
 
-If `$SANTIMENT_API_KEY` is set in the environment, use it directly. Otherwise, ask the user for their key. The key can be obtained at https://app.santiment.net/account#api-keys (free tier available).
-
-```
-Authorization: Apikey <YOUR_API_KEY>
-```
-
-Minimal curl template for any Santiment query:
+All requests are HTTP `POST` with `Content-Type: application/json`. **Use GraphQL variables** to separate the query template from runtime values — this avoids quote-escaping errors. In curl, use a heredoc with a quoted delimiter (`<< 'QUERY'`) so the shell doesn't interpret `$variable` as environment variables.
 
 ```bash
 curl -s -X POST https://api.santiment.net/graphql \
   -H "Content-Type: application/json" \
-  -H "Authorization: Apikey <YOUR_API_KEY>" \
-  -d '{"query": "<GRAPHQL_QUERY_HERE>"}'
+  -H "Authorization: Apikey $SANTIMENT_API_KEY" \
+  -d @- << 'QUERY'
+{
+  "query": "query($metric: String!, $slug: String, $from: DateTime!, $to: DateTime!, $interval: interval) { getMetric(metric: $metric) { timeseriesData(slug: $slug, from: $from, to: $to, interval: $interval) { datetime value } } }",
+  "variables": {
+    "metric": "price_usd",
+    "slug": "bitcoin",
+    "from": "utc_now-7d",
+    "to": "utc_now",
+    "interval": "1d"
+  }
+}
+QUERY
 ```
 
-Example — fetch daily Bitcoin price for the last 7 days:
+### Variable Types
 
-```bash
-curl -s -X POST https://api.santiment.net/graphql \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Apikey <YOUR_API_KEY>" \
-  -d '{"query": "{ getMetric(metric: \"price_usd\") { timeseriesData(slug: \"bitcoin\", from: \"utc_now-7d\", to: \"utc_now\", interval: \"1d\") { datetime value } } }"}'
-```
+Use these GraphQL types in `query(...)` variable declarations:
 
-When constructing the `-d` payload, escape inner double quotes with backslashes since the GraphQL query is embedded inside a JSON string.
+| Parameter | Type |
+|---|---|
+| `metric` | `String!` |
+| `slug` | `String` |
+| `selector` | `MetricTargetSelectorInputObject` |
+| `from` / `to` | `DateTime!` |
+| `interval` | `interval` |
+| `aggregation` | `Aggregation` |
+| `transform` | `TimeseriesMetricTransformInputObject` |
 
 ## Core Query: `getMetric`
 
@@ -83,17 +91,12 @@ These parameters are passed to the sub-field, not to `getMetric` itself:
 
 ### Relative Time Expressions
 
-The `from` and `to` fields accept relative expressions anchored to the current UTC time. These are the preferred approach because they keep queries portable without hardcoding dates:
+The `from` and `to` fields accept relative expressions: `utc_now-<N><unit>` where unit is `d` (day), `w` (week), `m` (month), or `y` (year). Preferred over hardcoded dates.
 
 - `"utc_now"` — current time
-- `"utc_now-1d"` — 1 day ago
-- `"utc_now-1w"` — 1 week ago
+- `"utc_now-7d"` — 7 days ago
 - `"utc_now-1m"` — 1 month ago
-- `"utc_now-3m"` — 3 months ago
-- `"utc_now-6m"` — 6 months ago
 - `"utc_now-1y"` — 1 year ago
-
-The pattern is `utc_now-<N><unit>` where unit is `d` (day), `w` (week), `m` (month), or `y` (year). Combine any integer with any unit.
 
 ### Transforms
 
@@ -248,12 +251,12 @@ The one exception to the HTTP 200 rule is rate limiting: HTTP **429** means the 
 
 Follow these steps to construct any Santiment API query:
 
-1. **Pick a metric** — if you know the exact metric name, use it directly. Otherwise, follow the Discovery Workflow above: fetch `getAvailableMetrics`, search for keywords matching the user's intent (see the keyword map in `references/metrics-catalog.md`), then inspect metadata to confirm compatibility.
-2. **Pick a slug** — the asset identifier (e.g., `"bitcoin"`, `"ethereum"`). If the user provides a ticker or name, resolve it with `projectBySlug` or `allProjects`.
-3. **Pick a time range** — set `from` and `to` using relative expressions like `"utc_now-30d"` (preferred) or ISO 8601 timestamps. Check `availableSince` to ensure data exists for the range.
-4. **Pick an interval** — `"1d"` for daily, `"1h"` for hourly, `"7d"` for weekly. Larger intervals reduce complexity and quota usage.
-5. **Pick a sub-field** — `timeseriesData` for a series, `aggregatedTimeseriesData` for a single value, `timeseriesDataPerSlugJson` for multi-asset comparison.
-6. **Optionally add** — `transform` for moving average or percent change, `selector` instead of `slug` for advanced filtering, `aggregation` to override the default (e.g., `SUM` instead of `AVG`).
+1. **Pick a metric** — use directly if known, otherwise follow the Discovery Workflow above.
+2. **Pick a slug** — e.g., `"bitcoin"`. Resolve names/tickers via `projectBySlug` or `allProjects`.
+3. **Pick a time range** — `from`/`to` with relative expressions (preferred) or ISO 8601. Check `availableSince` first.
+4. **Pick an interval** — `"1d"`, `"1h"`, `"7d"`. Larger intervals reduce complexity.
+5. **Pick a sub-field** — `timeseriesData` for series, `aggregatedTimeseriesData` for a single value, `timeseriesDataPerSlugJson` for multi-asset.
+6. **Optionally add** — `transform`, `selector` (instead of `slug`), or `aggregation` override.
 
 After constructing the query, execute it via curl with the user's API key and parse the JSON response. Always check for the `errors` array before processing `data`.
 

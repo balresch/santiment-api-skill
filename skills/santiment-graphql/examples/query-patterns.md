@@ -1,6 +1,6 @@
 # Santiment GraphQL Query Patterns
 
-Five examples demonstrating distinct API capabilities. Each uses a different sub-field or parameter pattern.
+Five examples demonstrating distinct API capabilities. Each uses a different sub-field or parameter pattern. All curl commands use GraphQL variables with a heredoc to avoid quote-escaping issues.
 
 ## 1. Timeseries — Daily Bitcoin Price
 
@@ -27,8 +27,19 @@ Uses `timeseriesData` with relative time expressions to fetch a daily price seri
 ```bash
 curl -s -X POST https://api.santiment.net/graphql \
   -H "Content-Type: application/json" \
-  -H "Authorization: Apikey <YOUR_API_KEY>" \
-  -d '{"query": "{ getMetric(metric: \"price_usd\") { timeseriesData(slug: \"bitcoin\", from: \"utc_now-7d\", to: \"utc_now\", interval: \"1d\") { datetime value } } }"}'
+  -H "Authorization: Apikey $SANTIMENT_API_KEY" \
+  -d @- << 'QUERY'
+{
+  "query": "query($metric: String!, $slug: String, $from: DateTime!, $to: DateTime!, $interval: interval) { getMetric(metric: $metric) { timeseriesData(slug: $slug, from: $from, to: $to, interval: $interval) { datetime value } } }",
+  "variables": {
+    "metric": "price_usd",
+    "slug": "bitcoin",
+    "from": "utc_now-7d",
+    "to": "utc_now",
+    "interval": "1d"
+  }
+}
+QUERY
 ```
 
 ## 2. Multi-Asset Comparison — Exchange Inflows
@@ -53,8 +64,19 @@ Uses `timeseriesDataPerSlugJson` with a `slugs` selector to fetch one metric for
 ```bash
 curl -s -X POST https://api.santiment.net/graphql \
   -H "Content-Type: application/json" \
-  -H "Authorization: Apikey <YOUR_API_KEY>" \
-  -d '{"query": "{ getMetric(metric: \"exchange_inflow\") { timeseriesDataPerSlugJson(selector: { slugs: [\"bitcoin\", \"ethereum\", \"ripple\"] }, from: \"utc_now-30d\", to: \"utc_now\", interval: \"1d\") } }"}'
+  -H "Authorization: Apikey $SANTIMENT_API_KEY" \
+  -d @- << 'QUERY'
+{
+  "query": "query($metric: String!, $selector: MetricTargetSelectorInputObject, $from: DateTime!, $to: DateTime!, $interval: interval) { getMetric(metric: $metric) { timeseriesDataPerSlugJson(selector: $selector, from: $from, to: $to, interval: $interval) } }",
+  "variables": {
+    "metric": "exchange_inflow",
+    "selector": { "slugs": ["bitcoin", "ethereum", "ripple"] },
+    "from": "utc_now-30d",
+    "to": "utc_now",
+    "interval": "1d"
+  }
+}
+QUERY
 ```
 
 ## 3. Transform — Ethereum MVRV with 7-Day Moving Average
@@ -83,8 +105,20 @@ Uses the `transform` parameter to smooth noisy data with a moving average.
 ```bash
 curl -s -X POST https://api.santiment.net/graphql \
   -H "Content-Type: application/json" \
-  -H "Authorization: Apikey <YOUR_API_KEY>" \
-  -d '{"query": "{ getMetric(metric: \"mvrv_usd\") { timeseriesData(slug: \"ethereum\", from: \"utc_now-6m\", to: \"utc_now\", interval: \"1d\", transform: { type: \"moving_average\", movingAverageBase: 7 }) { datetime value } } }"}'
+  -H "Authorization: Apikey $SANTIMENT_API_KEY" \
+  -d @- << 'QUERY'
+{
+  "query": "query($metric: String!, $slug: String, $from: DateTime!, $to: DateTime!, $interval: interval, $transform: TimeseriesMetricTransformInputObject) { getMetric(metric: $metric) { timeseriesData(slug: $slug, from: $from, to: $to, interval: $interval, transform: $transform) { datetime value } } }",
+  "variables": {
+    "metric": "mvrv_usd",
+    "slug": "ethereum",
+    "from": "utc_now-6m",
+    "to": "utc_now",
+    "interval": "1d",
+    "transform": { "type": "moving_average", "movingAverageBase": 7 }
+  }
+}
+QUERY
 ```
 
 ## 4. Aggregated Value — Average Daily Active Addresses
@@ -109,8 +143,19 @@ Uses `aggregatedTimeseriesData` to return a single summary number instead of a t
 ```bash
 curl -s -X POST https://api.santiment.net/graphql \
   -H "Content-Type: application/json" \
-  -H "Authorization: Apikey <YOUR_API_KEY>" \
-  -d '{"query": "{ getMetric(metric: \"daily_active_addresses\") { aggregatedTimeseriesData(slug: \"cardano\", from: \"utc_now-30d\", to: \"utc_now\", aggregation: AVG) } }"}'
+  -H "Authorization: Apikey $SANTIMENT_API_KEY" \
+  -d @- << 'QUERY'
+{
+  "query": "query($metric: String!, $slug: String, $from: DateTime!, $to: DateTime!, $aggregation: Aggregation) { getMetric(metric: $metric) { aggregatedTimeseriesData(slug: $slug, from: $from, to: $to, aggregation: $aggregation) } }",
+  "variables": {
+    "metric": "daily_active_addresses",
+    "slug": "cardano",
+    "from": "utc_now-30d",
+    "to": "utc_now",
+    "aggregation": "AVG"
+  }
+}
+QUERY
 ```
 
 ## 5. Discovery Workflow — Finding and Querying an Unknown Metric
@@ -124,7 +169,7 @@ The response is large (1,000+ metrics), so save it to a file:
 ```bash
 curl -s -X POST https://api.santiment.net/graphql \
   -H "Content-Type: application/json" \
-  -H "Authorization: Apikey <YOUR_API_KEY>" \
+  -H "Authorization: Apikey $SANTIMENT_API_KEY" \
   -d '{"query": "{ getAvailableMetrics }"}' \
   -o /tmp/santiment-metrics.json
 ```
@@ -172,8 +217,19 @@ The metadata reveals this metric supports `slug: "ethereum"` and requires a `hol
 ```bash
 curl -s -X POST https://api.santiment.net/graphql \
   -H "Content-Type: application/json" \
-  -H "Authorization: Apikey <YOUR_API_KEY>" \
-  -d '{"query": "{ getMetric(metric: \"amount_in_top_holders\") { timeseriesData(selector: { slug: \"ethereum\", holdersCount: 100 }, from: \"utc_now-30d\", to: \"utc_now\", interval: \"1d\") { datetime value } } }"}'
+  -H "Authorization: Apikey $SANTIMENT_API_KEY" \
+  -d @- << 'QUERY'
+{
+  "query": "query($metric: String!, $selector: MetricTargetSelectorInputObject, $from: DateTime!, $to: DateTime!, $interval: interval) { getMetric(metric: $metric) { timeseriesData(selector: $selector, from: $from, to: $to, interval: $interval) { datetime value } } }",
+  "variables": {
+    "metric": "amount_in_top_holders",
+    "selector": { "slug": "ethereum", "holdersCount": 100 },
+    "from": "utc_now-30d",
+    "to": "utc_now",
+    "interval": "1d"
+  }
+}
+QUERY
 ```
 
 This example demonstrates the full discovery flow: search the metric list by keywords, inspect metadata to learn required selectors, then construct the query with the correct parameters. The `holdersCount` selector would not have been obvious without the metadata step.
