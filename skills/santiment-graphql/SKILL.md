@@ -1,12 +1,77 @@
 ---
-name: santiment-graphql
-description: >
-  This skill should be used when the user asks to "query Santiment", "fetch crypto metrics",
-  "get on-chain data", "check exchange flows", "look up MVRV", "get social volume",
-  "fetch Bitcoin price from Santiment", "use the Santiment API", or needs to access
-  cryptocurrency market data via the Santiment GraphQL API.
-version: 1.0.0
-metadata: {"openclaw":{"emoji":"📊","requires":{"env":["SANTIMENT_API_KEY"]},"primaryEnv":"SANTIMENT_API_KEY"}}
+name: santiment-api
+description: Query the Santiment GraphQL API for on-chain, financial, social, and development crypto metrics across 2,000+ assets
+version: 1.1.4
+author: Santiment <support@santiment.net>
+tags: [santiment, crypto, graphql, on-chain, metrics, blockchain, defi, exchange-flows, social-sentiment, mvrv, whale-tracking]
+
+triggers:
+  - type: keyword
+    keywords: [santiment, crypto metrics, on-chain data, exchange flows, mvrv, nvt, social volume, whale tracking, active addresses, crypto analytics, token age, exchange inflow, exchange outflow, dev activity]
+    priority: 90
+  - type: pattern
+    patterns:
+      - "(?i)(query|fetch|get)\\s+(santiment|crypto|on-chain)"
+      - "(?i)santiment\\s+api"
+      - "(?i)(mvrv|nvt|exchange.*(inflow|outflow|balance))"
+      - "(?i)(daily.active.addresses|social.volume|dev.activity)"
+    priority: 85
+  - type: intent
+    intent_category: crypto_data_analysis
+    priority: 95
+
+parameters:
+  - name: metric
+    type: string
+    required: false
+    description: Santiment metric name (e.g., price_usd, daily_active_addresses, mvrv_usd)
+  - name: slug
+    type: string
+    required: false
+    description: Asset identifier (e.g., bitcoin, ethereum, cardano)
+  - name: from
+    type: string
+    required: false
+    description: Start of time range (ISO 8601 or relative expression like utc_now-7d)
+  - name: to
+    type: string
+    required: false
+    description: End of time range (ISO 8601 or relative expression like utc_now)
+  - name: interval
+    type: string
+    required: false
+    default: "1d"
+    description: Data granularity (5m, 1h, 1d, 7d)
+
+prerequisites:
+  env_vars:
+    - SANTIMENT_API_KEY
+  skills: []
+
+composable: true
+persist_state: false
+
+scripts:
+  enabled: true
+  working_directory: ./scripts
+  definitions:
+    - name: santiment_query
+      description: Execute a Santiment GraphQL query for any metric, asset, and time range
+      type: python
+      file: santiment_query.py
+      timeout: 30
+    - name: santiment_discovery
+      description: Discover available metrics and asset slugs from the Santiment API
+      type: python
+      file: santiment_discovery.py
+      timeout: 30
+
+metadata:
+  openclaw:
+    emoji: "📊"
+    requires:
+      env: [SANTIMENT_API_KEY]
+    primaryEnv: SANTIMENT_API_KEY
 ---
 
 # Santiment GraphQL API
