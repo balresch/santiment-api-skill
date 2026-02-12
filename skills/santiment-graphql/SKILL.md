@@ -5,7 +5,7 @@ description: >
   "get on-chain data", "check exchange flows", "look up MVRV", "get social volume",
   "fetch Bitcoin price from Santiment", "use the Santiment API", or needs to access
   cryptocurrency market data via the Santiment GraphQL API.
-version: 1.0.0
+version: 1.1.5
 metadata: {"openclaw":{"emoji":"📊","requires":{"env":["SANTIMENT_API_KEY"]},"primaryEnv":"SANTIMENT_API_KEY"}}
 ---
 
