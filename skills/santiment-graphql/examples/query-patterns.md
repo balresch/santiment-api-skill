@@ -4,20 +4,17 @@ Six examples demonstrating distinct API capabilities. Each uses a different sub-
 
 ## 1. Timeseries — Daily Bitcoin Price
 
-Uses `timeseriesData` with relative time expressions to fetch a daily price series.
+Uses `timeseriesDataJson` with relative time expressions to fetch a daily price series. No field selection — the API returns a JSON list of maps.
 
 ```graphql
 {
   getMetric(metric: "price_usd") {
-    timeseriesData(
+    timeseriesDataJson(
       slug: "bitcoin"
       from: "utc_now-7d"
       to: "utc_now"
       interval: "1d"
-    ) {
-      datetime
-      value
-    }
+    )
   }
 }
 ```
@@ -30,7 +27,7 @@ curl -s -X POST https://api.santiment.net/graphql \
   -H "Authorization: Apikey $SANTIMENT_API_KEY" \
   -d @- << 'QUERY'
 {
-  "query": "query($metric: String!, $slug: String, $from: DateTime!, $to: DateTime!, $interval: interval) { getMetric(metric: $metric) { timeseriesData(slug: $slug, from: $from, to: $to, interval: $interval) { datetime value } } }",
+  "query": "query($metric: String!, $slug: String, $from: DateTime!, $to: DateTime!, $interval: interval) { getMetric(metric: $metric) { timeseriesDataJson(slug: $slug, from: $from, to: $to, interval: $interval) } }",
   "variables": {
     "metric": "price_usd",
     "slug": "bitcoin",
@@ -86,16 +83,13 @@ Uses the `transform` parameter to smooth noisy data with a moving average.
 ```graphql
 {
   getMetric(metric: "mvrv_usd") {
-    timeseriesData(
+    timeseriesDataJson(
       slug: "ethereum"
       from: "utc_now-6m"
       to: "utc_now"
       interval: "1d"
       transform: { type: "moving_average", movingAverageBase: 7 }
-    ) {
-      datetime
-      value
-    }
+    )
   }
 }
 ```
@@ -108,7 +102,7 @@ curl -s -X POST https://api.santiment.net/graphql \
   -H "Authorization: Apikey $SANTIMENT_API_KEY" \
   -d @- << 'QUERY'
 {
-  "query": "query($metric: String!, $slug: String, $from: DateTime!, $to: DateTime!, $interval: interval, $transform: TimeseriesMetricTransformInputObject) { getMetric(metric: $metric) { timeseriesData(slug: $slug, from: $from, to: $to, interval: $interval, transform: $transform) { datetime value } } }",
+  "query": "query($metric: String!, $slug: String, $from: DateTime!, $to: DateTime!, $interval: interval, $transform: TimeseriesMetricTransformInputObject) { getMetric(metric: $metric) { timeseriesDataJson(slug: $slug, from: $from, to: $to, interval: $interval, transform: $transform) } }",
   "variables": {
     "metric": "mvrv_usd",
     "slug": "ethereum",
@@ -199,15 +193,12 @@ The metadata reveals this metric supports `slug: "ethereum"` and requires a `hol
 ```graphql
 {
   getMetric(metric: "amount_in_top_holders") {
-    timeseriesData(
+    timeseriesDataJson(
       selector: { slug: "ethereum", holdersCount: 100 }
       from: "utc_now-30d"
       to: "utc_now"
       interval: "1d"
-    ) {
-      datetime
-      value
-    }
+    )
   }
 }
 ```
@@ -220,7 +211,7 @@ curl -s -X POST https://api.santiment.net/graphql \
   -H "Authorization: Apikey $SANTIMENT_API_KEY" \
   -d @- << 'QUERY'
 {
-  "query": "query($metric: String!, $selector: MetricTargetSelectorInputObject, $from: DateTime!, $to: DateTime!, $interval: interval) { getMetric(metric: $metric) { timeseriesData(selector: $selector, from: $from, to: $to, interval: $interval) { datetime value } } }",
+  "query": "query($metric: String!, $selector: MetricTargetSelectorInputObject, $from: DateTime!, $to: DateTime!, $interval: interval) { getMetric(metric: $metric) { timeseriesDataJson(selector: $selector, from: $from, to: $to, interval: $interval) } }",
   "variables": {
     "metric": "amount_in_top_holders",
     "selector": { "slug": "ethereum", "holdersCount": 100 },
@@ -243,20 +234,17 @@ Demonstrates the reactive diagnostic flow when an on-chain metric returns empty 
 ```graphql
 {
   getMetric(metric: "daily_active_addresses") {
-    timeseriesData(
+    timeseriesDataJson(
       slug: "trust-wallet-token"
       from: "utc_now-30d"
       to: "utc_now"
       interval: "1d"
-    ) {
-      datetime
-      value
-    }
+    )
   }
 }
 ```
 
-Response: `{ "data": { "getMetric": { "timeseriesData": [] } } }` — no error, just empty data.
+Response: `{ "data": { "getMetric": { "timeseriesDataJson": [] } } }` — no error, just empty data.
 
 **Step 2 — Check `availableSince` and identify the token's chain.**
 
@@ -299,20 +287,17 @@ QUERY
 {
   getMetric(metric: "price_usd") {
     availableSince(slug: "trust-wallet-token")
-    timeseriesData(
+    timeseriesDataJson(
       slug: "trust-wallet-token"
       from: "utc_now-7d"
       to: "utc_now"
       interval: "1d"
-    ) {
-      datetime
-      value
-    }
+    )
   }
 }
 ```
 
-`availableSince` returns a real date (not epoch), and `timeseriesData` returns actual price data — confirming the token has financial data even though on-chain metrics are unavailable.
+`availableSince` returns a real date (not epoch), and `timeseriesDataJson` returns actual price data — confirming the token has financial data even though on-chain metrics are unavailable.
 
 **Example user-facing response:**
 

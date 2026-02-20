@@ -38,7 +38,7 @@ Also accept specific ISO 8601 dates if the user provides them.
 ## Step 4: Choose a Sub-field and Interval
 
 Based on the user's needs, recommend the appropriate sub-field:
-- **Time series** → `timeseriesData` with an interval (`"1d"` for daily, `"1h"` for hourly)
+- **Time series** → `timeseriesDataJson` with an interval (`"1d"` for daily, `"1h"` for hourly)
 - **Single summary value** → `aggregatedTimeseriesData` with an aggregation (`AVG`, `SUM`, `LAST`)
 - **Multiple assets at once** → `timeseriesDataPerSlugJson`
 

@@ -36,7 +36,7 @@ curl -s -X POST https://api.santiment.net/graphql \
   -H "Authorization: Apikey $SANTIMENT_API_KEY" \
   -d @- << 'QUERY'
 {
-  "query": "query($metric: String!, $slug: String, $from: DateTime!, $to: DateTime!, $interval: interval) { getMetric(metric: $metric) { timeseriesData(slug: $slug, from: $from, to: $to, interval: $interval) { datetime value } } }",
+  "query": "query($metric: String!, $slug: String, $from: DateTime!, $to: DateTime!, $interval: interval) { getMetric(metric: $metric) { timeseriesDataJson(slug: $slug, from: $from, to: $to, interval: $interval) } }",
   "variables": {
     "metric": "price_usd",
     "slug": "bitcoin",
@@ -70,13 +70,13 @@ Nearly all data flows through `getMetric`. Pass a metric name string and then se
 
 Choose exactly one sub-field per `getMetric` call:
 
-| Sub-field                   | Returns                                    | When to use                                                                                                                                                                                                      |
-| --------------------------- | ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `timeseriesDataJson`        | JSON list of maps with slug and value keys | Returns a time series spanning the `from`-`to` time range where values are equally spaced `interval` time apart                                                                                                  |
-| `timeseriesDataPerSlugJson` | JSON list of maps                          | Fetch the same metric for multiple assets in a single API call. Pass `selector: { slugs: ["bitcoin", "ethereum"] }`. This counts as one API call, making it much more efficient than separate queries per asset. |
-| `aggregatedTimeseriesData`  | Single numeric value                       | Need one summary number (average, sum, last value) over a time range.                                                                                                                                            |
-| `metadata`                  | Metric metadata object                     | Discover available slugs, aggregations, selectors, intervals, and data type for a metric. Call this before querying an unfamiliar metric.                                                                        |
-| `availableSince`            | ISO 8601 date string                       | Check how far back data exists for a given metric and slug. Prevents wasted calls on empty time ranges. A return value of `1970-01-01T00:00:00Z` means the metric has **never been computed** for this slug.     |
+| Sub-field                   | Returns                | When to use                                                                                                                                                                                                      |
+| --------------------------- | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `timeseriesDataJson`        | JSON list of maps      | Returns a time series spanning the `from`-`to` time range where values are equally spaced `interval` time apart                                                                                                  |
+| `timeseriesDataPerSlugJson` | JSON list of maps      | Fetch the same metric for multiple assets in a single API call. Pass `selector: { slugs: ["bitcoin", "ethereum"] }`. This counts as one API call, making it much more efficient than separate queries per asset. |
+| `aggregatedTimeseriesData`  | Single numeric value   | Need one summary number (average, sum, last value) over a time range.                                                                                                                                            |
+| `metadata`                  | Metric metadata object | Discover available slugs, aggregations, selectors, intervals, and data type for a metric. Call this before querying an unfamiliar metric.                                                                        |
+| `availableSince`            | ISO 8601 date string   | Check how far back data exists for a given metric and slug. Prevents wasted calls on empty time ranges. A return value of `1970-01-01T00:00:00Z` means the metric has **never been computed** for this slug.     |
 
 ### Parameters
 
@@ -105,7 +105,7 @@ The `from` and `to` fields accept ISO8601 strings (`2025-01-01T12:30:00Z`) or re
 
 ### Transforms
 
-Apply transforms directly in the query to post-process data server-side. Pass the `transform` parameter to `timeseriesData`:
+Apply transforms directly in the query to post-process data server-side. Pass the `transform` parameter to `timeseriesDataJson`:
 
 | Transform                                        | Effect                                                          | Use case                                               |
 | ------------------------------------------------ | --------------------------------------------------------------- | ------------------------------------------------------ |
@@ -255,7 +255,7 @@ Practical guidance:
 - Use aliases (`last_price_usd`, `avg_daa_30d`, etc.) so each metric column is explicit.
 - Start with small pages (`pageSize: 50` or `100`), then paginate.
 - If complexity errors appear, reduce `pageSize`, narrow time windows, or request fewer metrics per query.
-- Prefer this pattern for screening/ranking; switch to `getMetric(...){ timeseriesData... }` only for drill-down charts.
+- Prefer this pattern for screening/ranking; switch to `getMetric(...){ timeseriesDataJson(...) }` only for drill-down charts.
 
 ### Check data availability for a metric and slug
 
@@ -335,7 +335,7 @@ Follow these steps to construct any Santiment API query:
 2. **Pick a slug** — resolve names/tickers via `projectBySlug` or `allProjects`.
 3. **Pick a time range** — relative expressions preferred. Check `availableSince` first.
 4. **Pick an interval** — `"1d"`, `"1h"`, `"7d"`. Larger intervals reduce complexity.
-5. **Pick a sub-field** — `timeseriesData` for series, `aggregatedTimeseriesData` for single value, `timeseriesDataPerSlugJson` for multi-asset.
+5. **Pick a sub-field** — `timeseriesDataJson` for series, `aggregatedTimeseriesData` for single value, `timeseriesDataPerSlugJson` for multi-asset.
 6. **Optionally add** — `transform`, `selector` (instead of `slug`), or `aggregation` override.
 7. **If data is empty** — check `availableSince` for epoch. If epoch, the metric isn't computed for this slug's chain. Report unavailability and suggest alternative metrics.
 
