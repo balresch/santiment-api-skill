@@ -5,7 +5,7 @@ description: >
   development) across 2,000+ assets. Use when the user asks to query Santiment, fetch
   crypto metrics, get on-chain data, check exchange flows, look up MVRV, get social
   volume, fetch price of Bitcoin, or access cryptocurrency market data via the API.
-version: 1.1.5
+version: 1.1.6
 metadata:
   {
     "openclaw":
