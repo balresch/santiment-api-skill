@@ -74,7 +74,7 @@ Financial, social, and development metrics are aggregated from off-chain sources
 
 ### Reactive Diagnostic Flow
 
-Run these checks **only when `timeseriesData` returns `[]` without errors**. Do not run them preemptively on every query.
+Run these checks **only when `timeseriesDataJson` returns `[]` without errors**. Do not run them preemptively on every query.
 
 **Step 1 — Check data availability timestamps:**
 
@@ -121,7 +121,7 @@ A real date (not epoch) confirms this metric has data for the token.
 ### Decision Tree
 
 ```
-timeseriesData returns [] and no errors?
+timeseriesDataJson returns [] and no errors?
 ├─ YES → Check availableSince for this metric + slug
 │   ├─ Returns epoch (1970-01-01) → Metric never computed for this slug
 │   │   ├─ Check projectBySlug { infrastructure }
