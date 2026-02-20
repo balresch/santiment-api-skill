@@ -117,17 +117,15 @@ Transforms reduce the number of returned data points by N-1 for moving averages.
 
 ## Dynamic Discovery
 
-When you don't know the exact metric name for a user's request, follow this 3-step workflow. Always prefer dynamic discovery over hardcoded values.
+When the metric name is unknown, use this 3-step workflow. Prefer discovery over hardcoded values.
 
 ### Step 1 — Fetch the metric list
 
 ```graphql
-{
-  getAvailableMetrics
-}
+{ getAvailableMetrics }
 ```
 
-Returns 1,000+ `snake_case` strings. **The response is large** — save to a file with `-o` and read it directly (e.g., `open()` in Python). Do not pipe the contents through stdin at any stage — neither from curl nor when processing the file afterward:
+Returns 1,000+ `snake_case` strings. Save to a file with `-o` and read directly; do not pipe through stdin:
 
 ```bash
 curl -s -X POST https://api.santiment.net/graphql \
@@ -137,15 +135,15 @@ curl -s -X POST https://api.santiment.net/graphql \
   -o /tmp/santiment-metrics.json
 ```
 
-Filter by plan with `getAvailableMetrics(product: SANAPI, plan: BUSINESS_PRO)`.
+Optional: `getAvailableMetrics(product: SANAPI, plan: BUSINESS_PRO)` to filter by plan.
 
 ### Step 2 — Search by keywords
 
-Search the saved file for keywords matching user intent. Example: whale activity → search for `holder`, `top`, `whale`, `supply`, `amount_in`. See `references/metrics-catalog.md` for intent-to-keyword mappings.
+Search the file for keywords matching user intent (e.g. whale → `holder`, `top`, `amount_in`). See `references/metrics-catalog.md` for mappings.
 
-### Step 3 — Inspect metadata before querying
+### Step 3 — Inspect metadata
 
-Once you have candidate metrics, fetch metadata to confirm compatibility:
+For candidate metrics, fetch metadata to confirm compatibility:
 
 ```graphql
 {
@@ -162,65 +160,21 @@ Once you have candidate metrics, fetch metadata to confirm compatibility:
 }
 ```
 
-This reveals required selectors (e.g., `holdersCount`, `owner`, `labelFqn`, etc.), supported slugs, and minimum interval. See `examples/query-patterns.md`.
+Metadata reveals required selectors (`holdersCount`, `owner`, `labelFqn`, etc.), supported slugs, and min interval. See `examples/query-patterns.md`.
 
 ### Find a project's slug
 
-Look up a specific project by slug to verify it exists and see its details:
-
 ```graphql
-{
-  projectBySlug(slug: "bitcoin") {
-    slug
-    name
-    ticker
-    infrastructure
-  }
-}
+{ projectBySlug(slug: "bitcoin") { slug name ticker infrastructure } }
 ```
 
-Browse all projects paginated (useful when the user provides a token name or ticker instead of a slug):
-
-```graphql
-{
-  allProjects {
-    slug
-    name
-    ticker
-  }
-}
-```
+For token/ticker → slug use `allProjects { slug name ticker }` (paginated).
 
 ### Fast pattern: aggregated metrics for many assets via `allProjects`
 
-When the user asks for **many assets** and **many summary metrics** at once, use `allProjects` with `aggregatedTimeseriesData` fields on each project. This is often faster and cheaper than doing `getMetric` calls asset-by-asset because one query can return a full matrix (projects x metrics) of already-aggregated values.
+Use `allProjects` with `aggregatedTimeseriesData` when the user wants **many assets** and **many summary metrics** at once — one query returns a projects×metrics matrix and is faster than asset-by-asset `getMetric`. Use for snapshot values (e.g. 30d avg, 7d sum, last value) and ranking/comparison; paginate and keep metric count reasonable to avoid complexity.
 
-Use this pattern when:
-
-- You need snapshot-like values (for example 30-day average, 7-day sum, latest value)
-- You do not need full timeseries points for each asset
-- You want to rank or compare many assets by multiple metrics in one response
-
-**Important:** paginate `allProjects` for large universes, and keep metric count reasonable to avoid complexity spikes.
-
-Example 1 — one aggregated metric across many assets:
-
-```graphql
-{
-  allProjects(page: 1, pageSize: 100) {
-    slug
-    name
-    avg_daa_30d: aggregatedTimeseriesData(
-      metric: "daily_active_addresses"
-      from: "utc_now-30d"
-      to: "utc_now"
-      aggregation: AVG
-    )
-  }
-}
-```
-
-Example 2 — multiple aggregated metrics across many assets in one query:
+Example — two aggregated metrics across many assets:
 
 ```graphql
 {
@@ -240,26 +194,17 @@ Example 2 — multiple aggregated metrics across many assets in one query:
       to: "utc_now"
       aggregation: AVG
     )
-    sum_exchange_inflow_7d: aggregatedTimeseriesData(
-      metric: "exchange_inflow"
-      from: "utc_now-7d"
-      to: "utc_now"
-      aggregation: SUM
-    )
   }
 }
 ```
 
-Practical guidance:
+- Use aliases for metric columns; start with small `pageSize` (50–100) and paginate.
+- If complexity errors, reduce `pageSize`, narrow time windows, or request fewer metrics.
+- Prefer for screening/ranking; use `getMetric { timeseriesDataJson }` for drill-down charts.
 
-- Use aliases (`last_price_usd`, `avg_daa_30d`, etc.) so each metric column is explicit.
-- Start with small pages (`pageSize: 50` or `100`), then paginate.
-- If complexity errors appear, reduce `pageSize`, narrow time windows, or request fewer metrics per query.
-- Prefer this pattern for screening/ranking; switch to `getMetric(...){ timeseriesDataJson(...) }` only for drill-down charts.
+### Check data availability
 
-### Check data availability for a metric and slug
-
-Before making a large timeseries query, verify that data exists for the desired metric-slug.
+Verify data exists for a metric+slug before large timeseries queries:
 
 ```graphql
 {
@@ -269,26 +214,20 @@ Before making a large timeseries query, verify that data exists for the desired 
 }
 ```
 
-### Check access restrictions for your plan
+### Check access restrictions
 
-Understand what historical range your API key can access for each metric. Call this to avoid wasted queries that would return restriction errors:
+Call to see historical range and limits per metric for your plan:
 
 ```graphql
 {
   getAccessRestrictions(product: SANAPI, plan: BUSINESS_PRO, filter: METRIC) {
     name
     isDeprecated
-    # Check if the metric is available at all for your plan
-    isAccessible
-    # Check if the metric has realtime/historical access restricted
-    isRestricted
-    # If access is restricted, check what is the first and last datetimes
-    # you can access. If null, then no restriction is applied
-    restrictedFrom
-    restrictedTo
-    # The lowest resolution for which the metric has data. Usually it's 5 minutes (5m) or 1 day (1d)
-    minInterval
-    # Find and read the documentation of the metric
+    isAccessible    # available for your plan
+    isRestricted    # realtime/historical restricted
+    restrictedFrom  # first accessible datetime (null = none)
+    restrictedTo    # last accessible datetime (null = none)
+    minInterval     # e.g. 5m or 1d
     docs
   }
 }
@@ -296,10 +235,7 @@ Understand what historical range your API key can access for each metric. Call t
 
 ## Error Handling
 
-The API returns HTTP **4xx** and **5xx** when experiencing client or network issues.
-HTTP Code **429** is reserved for rate-limits. If rate limits are exceeded, the error message and the HTTP response headers will include information about the rate limits.
-
-Otherwise the API always returns HTTP **200**, even for errors. Always parse the JSON and check for the `errors` array.
+The API returns HTTP **200** even for errors — always parse the JSON and check the `errors` array. Use 4xx/5xx for client or network issues; **429** means rate limit (see `references/rate-limits.md`).
 
 A typical error response:
 
@@ -345,8 +281,6 @@ Execute via curl with the user's API key and parse the JSON response. Always che
 
 Consult these reference files for detailed information:
 
-- **Metrics catalog** — `references/metrics-catalog.md` — keyword-to-metric mapping for translating user intent into search terms, plus 20 curated quick-reference metrics and naming conventions
-- **Rate limits** — `references/rate-limits.md` — tier limits, complexity scoring, and optimization strategies to avoid quota exhaustion
-- **Query patterns** — `examples/query-patterns.md` — 6 worked examples with both GraphQL and curl, including discovery workflow and ghost data diagnostics
-
-Official docs: [Getting started for developers](https://academy.santiment.net/for-developers).
+- **Metrics catalog** — `references/metrics-catalog.md` — keyword-to-metric mapping and ~20 quick-reference metrics
+- **Rate limits** — `references/rate-limits.md` — tier limits, complexity scoring, optimization
+- **Query patterns** — `examples/query-patterns.md` — 6 worked GraphQL+curl examples (discovery, ghost data)
