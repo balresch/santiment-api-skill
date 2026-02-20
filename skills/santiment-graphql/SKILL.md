@@ -1,12 +1,20 @@
 ---
 name: santiment-graphql
 description: >
-  This skill should be used when the user asks to "query Santiment", "fetch crypto metrics",
-  "get on-chain data", "check exchange flows", "look up MVRV", "get social volume",
-  "fetch Bitcoin price from Santiment", "use the Santiment API", or needs to access
-  cryptocurrency market data via the Santiment GraphQL API.
+  Queries the Santiment GraphQL API for crypto market data (on-chain, financial, social,
+  development) across 2,000+ assets. Use when the user asks to query Santiment, fetch
+  crypto metrics, get on-chain data, check exchange flows, look up MVRV, get social
+  volume, fetch price of Bitcoin, or access cryptocurrency market data via the API.
 version: 1.1.5
-metadata: {"openclaw":{"emoji":"📊","requires":{"env":["SANTIMENT_API_KEY"]},"primaryEnv":"SANTIMENT_API_KEY"}}
+metadata:
+  {
+    "openclaw":
+      {
+        "emoji": "📊",
+        "requires": { "env": ["SANTIMENT_API_KEY"] },
+        "primaryEnv": "SANTIMENT_API_KEY",
+      },
+  }
 ---
 
 # Santiment GraphQL API
@@ -44,15 +52,15 @@ QUERY
 
 Use these GraphQL types in `query(...)` variable declarations:
 
-| Parameter | Type |
-|---|---|
-| `metric` | `String!` |
-| `slug` | `String` |
-| `selector` | `MetricTargetSelectorInputObject` |
-| `from` / `to` | `DateTime!` |
-| `interval` | `interval` |
-| `aggregation` | `Aggregation` |
-| `transform` | `TimeseriesMetricTransformInputObject` |
+| Parameter     | Type                                   |
+| ------------- | -------------------------------------- |
+| `metric`      | `String!`                              |
+| `slug`        | `String`                               |
+| `selector`    | `MetricTargetSelectorInputObject`      |
+| `from` / `to` | `DateTime!`                            |
+| `interval`    | `interval`                             |
+| `aggregation` | `Aggregation`                          |
+| `transform`   | `TimeseriesMetricTransformInputObject` |
 
 ## Core Query: `getMetric`
 
@@ -62,36 +70,33 @@ Nearly all data flows through `getMetric`. Pass a metric name string and then se
 
 Choose exactly one sub-field per `getMetric` call:
 
-| Sub-field | Returns | When to use |
-|---|---|---|
-| `timeseriesData` | `[{datetime, value}]` | Default choice — returns a time series with explicit field selection. Use for charting, trend analysis, or any case where individual data points matter. |
-| `timeseriesDataJson` | Pre-formatted JSON string | Quick dump without specifying return fields. Useful for rapid prototyping but less control over output shape. |
-| `timeseriesDataPerSlugJson` | JSON object keyed by slug | Fetch the same metric for multiple assets in a single API call. Pass `selector: { slugs: ["bitcoin", "ethereum"] }`. This counts as one API call, making it much more efficient than separate queries per asset. |
-| `aggregatedTimeseriesData` | Single numeric value | Need one summary number (average, sum, last value) over a time range. Lowest complexity, most quota-friendly. |
-| `histogramData` | Array of bucketed ranges | Distribution data — e.g., how much ETH was bought at each price range. Less commonly needed. |
-| `metadata` | Metric metadata object | Discover available slugs, aggregations, selectors, intervals, and data type for a metric. Call this before querying an unfamiliar metric. |
-| `availableSince` | ISO 8601 date string | Check how far back data exists for a given metric and slug. Prevents wasted calls on empty time ranges. A return value of `1970-01-01T00:00:00Z` means the metric has **never been computed** for this slug. |
-| `lastDatetimeComputedAt` | ISO 8601 timestamp | Check data freshness — when the metric was last computed for a slug. |
+| Sub-field                   | Returns                                    | When to use                                                                                                                                                                                                      |
+| --------------------------- | ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `timeseriesDataJson`        | JSON list of maps with slug and value keys | Returns a time series spanning the `from`-`to` time range where values are equally spaced `interval` time apart                                                                                                  |
+| `timeseriesDataPerSlugJson` | JSON list of maps                          | Fetch the same metric for multiple assets in a single API call. Pass `selector: { slugs: ["bitcoin", "ethereum"] }`. This counts as one API call, making it much more efficient than separate queries per asset. |
+| `aggregatedTimeseriesData`  | Single numeric value                       | Need one summary number (average, sum, last value) over a time range.                                                                                                                                            |
+| `metadata`                  | Metric metadata object                     | Discover available slugs, aggregations, selectors, intervals, and data type for a metric. Call this before querying an unfamiliar metric.                                                                        |
+| `availableSince`            | ISO 8601 date string                       | Check how far back data exists for a given metric and slug. Prevents wasted calls on empty time ranges. A return value of `1970-01-01T00:00:00Z` means the metric has **never been computed** for this slug.     |
 
 ### Parameters
 
-These parameters are passed to the sub-field, not to `getMetric` itself:
+These parameters are passed to the sub-fields (timeseriesDataJson, timeseriesDataPerSlugJson and aggregatedTimeseriesData), not to `getMetric` itself. aggregatedTimeseriesData does not take `interval` and `transform`:
 
-| Parameter | Type | Description | Example |
-|---|---|---|---|
-| `slug` | String | Asset identifier. Use for single-asset queries. | `"bitcoin"`, `"ethereum"` |
-| `selector` | Object | Advanced selection. Use instead of `slug` when you need multi-asset queries, or filtering by `owner`, `label`, `holdersCount`, or `source`. | `{ slug: "bitcoin", source: "cryptocompare" }` |
-| `from` | String | Start of time range. Accepts ISO 8601 timestamps or relative expressions. | `"2024-01-01T00:00:00Z"`, `"utc_now-30d"` |
-| `to` | String | End of time range. Same format as `from`. | `"utc_now"` |
-| `interval` | String | Time granularity between data points. | `"5m"`, `"1h"`, `"1d"`, `"7d"` |
-| `aggregation` | Enum | Override the default aggregation method. Options: `AVG`, `SUM`, `LAST`, `FIRST`, `MEDIAN`, `MAX`, `MIN`, `ANY`. | `AVG` |
-| `transform` | Object | Post-processing transform applied to the result. | See Transforms section. |
+| Parameter     | Type   | Description                                                                                                                                 | Example                                        |
+| ------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| `slug`        | String | Asset identifier. Use for single-asset queries.                                                                                             | `"bitcoin"`, `"ethereum"`                      |
+| `selector`    | Object | Advanced selection. Use instead of `slug` when you need multi-asset queries, or filtering by `owner`, `label`, `holdersCount`, or `source`. | `{ slug: "bitcoin", source: "cryptocompare" }` |
+| `from`        | String | Start of time range. Accepts ISO 8601 timestamps or relative expressions.                                                                   | `"2024-01-01T00:00:00Z"`, `"utc_now-30d"`      |
+| `to`          | String | End of time range. Same format as `from`.                                                                                                   | `"utc_now"`                                    |
+| `interval`    | String | Time granularity between data points.                                                                                                       | `"5m"`, `"1h"`, `"1d"`, `"7d"`                 |
+| `aggregation` | Enum   | Override the default aggregation method. Options: `AVG`, `SUM`, `LAST`, `FIRST`, `MEDIAN`, `MAX`, `MIN`, `ANY`.                             | `AVG`                                          |
+| `transform`   | Object | Post-processing transform applied to the result.                                                                                            | See Transforms section.                        |
 
-**Important:** `slug` and `selector` are mutually exclusive. Use `slug` for simple single-asset queries. Use `selector` when querying multiple slugs at once (`{ slugs: [...] }`) or when a metric requires additional selector fields like `holdersCount` or `owner`.
+**Important:** `slug` and `selector` are mutually exclusive. Use `slug` for simple single-asset queries. Use `selector` when querying multiple slugs at once (`selector: { slugs: [...] }`) or when a metric requires additional selector fields like `holdersCount` or `owner`.
 
 ### Relative Time Expressions
 
-The `from` and `to` fields accept relative expressions: `utc_now-<N><unit>` where unit is `d` (day), `w` (week), `m` (month), or `y` (year). Preferred over hardcoded dates.
+The `from` and `to` fields accept ISO8601 strings (`2025-01-01T12:30:00Z`) or relative expressions: `utc_now-<N><unit>` where unit is `d` (day), `w` (week), `m` (month), or `y` (year).
 
 - `"utc_now"` — current time
 - `"utc_now-7d"` — 7 days ago
@@ -102,11 +107,11 @@ The `from` and `to` fields accept relative expressions: `utc_now-<N><unit>` wher
 
 Apply transforms directly in the query to post-process data server-side. Pass the `transform` parameter to `timeseriesData`:
 
-| Transform | Effect | Use case |
-|---|---|---|
-| `{type: "moving_average", movingAverageBase: N}` | Replace each value with the average of the preceding N values | Smooth noisy metrics like MVRV, social volume |
-| `{type: "consecutive_differences"}` | Replace each value with the difference from the prior value | Compute daily change from a cumulative metric |
-| `{type: "percent_change"}` | Replace each value with the percent change from the prior value | Normalize changes across metrics with different scales |
+| Transform                                        | Effect                                                          | Use case                                               |
+| ------------------------------------------------ | --------------------------------------------------------------- | ------------------------------------------------------ |
+| `{type: "moving_average", movingAverageBase: N}` | Replace each value with the average of the preceding N values   | Smooth noisy metrics like MVRV, social volume          |
+| `{type: "consecutive_differences"}`              | Replace each value with the difference from the prior value     | Compute daily change from a cumulative metric          |
+| `{type: "percent_change"}`                       | Replace each value with the percent change from the prior value | Normalize changes across metrics with different scales |
 
 Transforms reduce the number of returned data points by N-1 for moving averages. Request a slightly wider time range to compensate.
 
@@ -144,7 +149,7 @@ Once you have candidate metrics, fetch metadata to confirm compatibility:
 
 ```graphql
 {
-  getMetric(metric: "amount_in_top_holders") {
+  getMetric(metric: "daily_active_addresses") {
     metadata {
       availableSlugs
       availableAggregations
@@ -157,7 +162,7 @@ Once you have candidate metrics, fetch metadata to confirm compatibility:
 }
 ```
 
-This reveals required selectors (e.g., `holdersCount`), supported slugs, and minimum interval. Requesting a smaller interval than `minInterval` returns an error. See `examples/query-patterns.md` example 5 for a worked example.
+This reveals required selectors (e.g., `holdersCount`, `owner`, `labelFqn`, etc.), supported slugs, and minimum interval. See `examples/query-patterns.md`.
 
 ### Find a project's slug
 
@@ -178,7 +183,7 @@ Browse all projects paginated (useful when the user provides a token name or tic
 
 ```graphql
 {
-  allProjects(page: 1, pageSize: 50) {
+  allProjects {
     slug
     name
     ticker
@@ -186,15 +191,80 @@ Browse all projects paginated (useful when the user provides a token name or tic
 }
 ```
 
+### Fast pattern: aggregated metrics for many assets via `allProjects`
+
+When the user asks for **many assets** and **many summary metrics** at once, use `allProjects` with `aggregatedTimeseriesData` fields on each project. This is often faster and cheaper than doing `getMetric` calls asset-by-asset because one query can return a full matrix (projects x metrics) of already-aggregated values.
+
+Use this pattern when:
+
+- You need snapshot-like values (for example 30-day average, 7-day sum, latest value)
+- You do not need full timeseries points for each asset
+- You want to rank or compare many assets by multiple metrics in one response
+
+**Important:** paginate `allProjects` for large universes, and keep metric count reasonable to avoid complexity spikes.
+
+Example 1 — one aggregated metric across many assets:
+
+```graphql
+{
+  allProjects(page: 1, pageSize: 100) {
+    slug
+    name
+    avg_daa_30d: aggregatedTimeseriesData(
+      metric: "daily_active_addresses"
+      from: "utc_now-30d"
+      to: "utc_now"
+      aggregation: AVG
+    )
+  }
+}
+```
+
+Example 2 — multiple aggregated metrics across many assets in one query:
+
+```graphql
+{
+  allProjects(page: 1, pageSize: 100) {
+    slug
+    name
+    ticker
+    last_price_usd: aggregatedTimeseriesData(
+      metric: "price_usd"
+      from: "utc_now-1d"
+      to: "utc_now"
+      aggregation: LAST
+    )
+    avg_daa_30d: aggregatedTimeseriesData(
+      metric: "daily_active_addresses"
+      from: "utc_now-30d"
+      to: "utc_now"
+      aggregation: AVG
+    )
+    sum_exchange_inflow_7d: aggregatedTimeseriesData(
+      metric: "exchange_inflow"
+      from: "utc_now-7d"
+      to: "utc_now"
+      aggregation: SUM
+    )
+  }
+}
+```
+
+Practical guidance:
+
+- Use aliases (`last_price_usd`, `avg_daa_30d`, etc.) so each metric column is explicit.
+- Start with small pages (`pageSize: 50` or `100`), then paginate.
+- If complexity errors appear, reduce `pageSize`, narrow time windows, or request fewer metrics per query.
+- Prefer this pattern for screening/ranking; switch to `getMetric(...){ timeseriesData... }` only for drill-down charts.
+
 ### Check data availability for a metric and slug
 
-Before making a large timeseries query, verify that data exists for the desired metric-slug combination and check freshness:
+Before making a large timeseries query, verify that data exists for the desired metric-slug.
 
 ```graphql
 {
   getMetric(metric: "daily_active_addresses") {
     availableSince(slug: "ethereum")
-    lastDatetimeComputedAt(slug: "ethereum")
   }
 }
 ```
@@ -207,18 +277,29 @@ Understand what historical range your API key can access for each metric. Call t
 {
   getAccessRestrictions(product: SANAPI, plan: BUSINESS_PRO, filter: METRIC) {
     name
+    isDeprecated
+    # Check if the metric is available at all for your plan
     isAccessible
+    # Check if the metric has realtime/historical access restricted
     isRestricted
+    # If access is restricted, check what is the first and last datetimes
+    # you can access. If null, then no restriction is applied
     restrictedFrom
     restrictedTo
+    # The lowest resolution for which the metric has data. Usually it's 5 minutes (5m) or 1 day (1d)
     minInterval
+    # Find and read the documentation of the metric
+    docs
   }
 }
 ```
 
 ## Error Handling
 
-The API always returns HTTP **200**, even for errors. Always parse the JSON and check for the `errors` array.
+The API returns HTTP **4xx** and **5xx** when experiencing client or network issues.
+HTTP Code **429** is reserved for rate-limits. If rate limits are exceeded, the error message and the HTTP response headers will include information about the rate limits.
+
+Otherwise the API always returns HTTP **200**, even for errors. Always parse the JSON and check for the `errors` array.
 
 A typical error response:
 
@@ -236,19 +317,15 @@ A typical error response:
 
 When `data` contains `null` and `errors` is present, the query failed. Common errors:
 
-| Error | Cause | Fix |
-|---|---|---|
-| Invalid metric name | Metric string doesn't exist | Verify with `getAvailableMetrics` |
-| Invalid slug | Asset slug not recognized | Verify with `allProjects` or `projectBySlug` |
-| Interval too small | Requested interval below minimum for this metric or plan | Check `metadata { minInterval }` |
-| Time range restricted | Historical range exceeds plan allowance | Check `getAccessRestrictions` |
-| Complexity too high | Query requests too many data points | Reduce time range, increase interval, or fetch fewer fields |
-| HTTP 429 | Rate limit exceeded | Back off exponentially and retry after a delay |
-| Empty timeseries (no error) | On-chain metric not computed for this asset's chain | Check `availableSince` for epoch, then `projectBySlug { infrastructure }`. See `references/metrics-catalog.md` Ghost Data section. |
-
-**Empty data is not the same as zero data.** When `timeseriesData` returns `[]` without errors, do NOT tell the user there is no activity. On-chain metrics are only computed for indexed chains. Check `references/metrics-catalog.md` Ghost Data section for the diagnostic flow.
-
-The one exception to the HTTP 200 rule is rate limiting: HTTP **429** means the account's quota is exhausted. See `references/rate-limits.md` for details.
+| Error                       | Cause                                                               | Fix                                                                                                                                                                                                 |
+| --------------------------- | ------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Invalid metric name         | Metric string doesn't exist                                         | Verify with `getAvailableMetrics`                                                                                                                                                                   |
+| Invalid slug                | Asset slug not recognized                                           | Verify with `allProjects` or `projectBySlug`                                                                                                                                                        |
+| Interval too small          | Requested interval below minimum for this metric or plan            | Check `metadata { minInterval }`                                                                                                                                                                    |
+| Time range restricted       | Historical range exceeds plan allowance                             | Check `getAccessRestrictions`                                                                                                                                                                       |
+| Complexity too high         | Query requests too many data points                                 | Reduce time range, increase interval, or fetch fewer fields                                                                                                                                         |
+| HTTP 429                    | Rate limit exceeded                                                 | Back off exponentially and retry after a delay                                                                                                                                                      |
+| Empty timeseries (no error) | On-chain metric not computed at all or not computed for this period | Check `availableSince` to see if the metric/slug combo is computed, or check if the metric is in the list `projectBySlug(slug: "<slug>") { availableMetrics }`. See `references/metrics-catalog.md` |
 
 ## Quick Reference: Building a Query
 
@@ -271,3 +348,5 @@ Consult these reference files for detailed information:
 - **Metrics catalog** — `references/metrics-catalog.md` — keyword-to-metric mapping for translating user intent into search terms, plus 20 curated quick-reference metrics and naming conventions
 - **Rate limits** — `references/rate-limits.md` — tier limits, complexity scoring, and optimization strategies to avoid quota exhaustion
 - **Query patterns** — `examples/query-patterns.md` — 6 worked examples with both GraphQL and curl, including discovery workflow and ghost data diagnostics
+
+Official docs: [Getting started for developers](https://academy.santiment.net/for-developers).

@@ -10,7 +10,7 @@ This repository is a **Claude Code plugin** that teaches AI agents how to use th
 
 - **SKILL.md** — Core skill file loaded when the skill triggers. Contains endpoint/auth, `getMetric` query pattern, dynamic discovery, error handling, and a query-building checklist.
 - **references/** — Loaded on demand. Detailed metrics catalog and rate limit documentation.
-- **examples/** — Loaded on demand. Five worked GraphQL examples with curl commands.
+- **examples/** — Loaded on demand. Six worked GraphQL examples with curl commands.
 - **commands/santiment-query.md** — Slash command (`/santiment-api:santiment-query`) that walks through query construction step by step.
 - **commands/setup.md** — Slash command (`/santiment-api:setup`) that configures the user's API key for persistent use.
 - **hooks/** — SessionStart hook that auto-loads the API key from `~/.claude/santiment-api.local.md` into `$SANTIMENT_API_KEY`.
