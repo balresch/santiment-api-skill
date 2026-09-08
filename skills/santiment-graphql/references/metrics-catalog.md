@@ -1,6 +1,6 @@
 # Santiment Metrics Catalog
 
-For the full list of 750+ metrics, query `getAvailableMetrics`. Use this reference to translate user intent into search keywords, then scan the API's metric list for matches.
+For the full list of 1,100+ metrics, query `getAvailableMetrics`. Use this reference to translate user intent into search keywords, then scan the API's metric list for matches.
 
 ## Keyword Map for Metric Discovery
 
@@ -74,7 +74,7 @@ Financial, social, and development metrics are aggregated from off-chain sources
 
 ### Reactive Diagnostic Flow
 
-Run these checks **only when `timeseriesDataJson` returns `[]` without errors**. Do not run them preemptively on every query.
+Run these checks **only when `timeseriesDataJson` returns `[]` without errors**. Do not run them preemptively on every query. Note that an empty result has two possible causes — ghost data (never computed) and a silently clipped plan restriction (computed, but gated). The `availableSince` check below distinguishes them.
 
 **Step 1 — Check data availability timestamps:**
 
@@ -123,13 +123,21 @@ A real date (not epoch) confirms this metric has data for the token.
 ```
 timeseriesDataJson returns [] and no errors?
 ├─ YES → Check availableSince for this metric + slug
-│   ├─ Returns epoch (1970-01-01) → Metric never computed for this slug
+│   ├─ Returns epoch (1970-01-01) → GHOST DATA: never computed for this slug
 │   │   ├─ Check projectBySlug { infrastructure }
 │   │   ├─ Report: "On-chain metric X is not available for [token] ([chain])"
 │   │   └─ Offer chain-agnostic alternatives (price, social, dev metrics)
-│   └─ Returns real date → Data gap; widen time range or check lastDatetimeComputedAt
+│   └─ Returns a real date → the metric IS computed, so this is NOT ghost data
+│       ├─ Check lastDatetimeComputedAt
+│       ├─ Recent? → PLAN RESTRICTION: your window was silently clipped.
+│       │   Re-query "utc_now-2d".."utc_now" to force the error and read
+│       │   the allowed bounds, then retry inside them.
+│       │   See references/rate-limits.md
+│       └─ Stale/absent? → genuine data gap; widen the time range
 └─ NO → Process data normally
 ```
+
+**Do not conflate the two.** Ghost data means the metric was never computed and never will be for that asset — the honest answer is "unavailable, here are alternatives". A plan restriction means the data exists and is current, but your subscription cannot read the recent portion — the honest answer is "here is the most recent value I can access, dated X". Telling a user data doesn't exist when it is merely gated is just as wrong as reporting stale data as current.
 
 ### Communication Guidance
 
