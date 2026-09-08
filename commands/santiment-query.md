@@ -30,7 +30,7 @@ If the user gives a ticker or full name instead of a slug, map it (e.g., "BTC" â
 Ask the user what time period they need. Suggest relative expressions:
 - Last 7 days: `from: "utc_now-7d"`, `to: "utc_now"`
 - Last 30 days: `from: "utc_now-30d"`, `to: "utc_now"`
-- Last 6 months: `from: "utc_now-6m"`, `to: "utc_now"`
+- Last 6 months: `from: "utc_now-26w"`, `to: "utc_now"` (there is no month unit â€” `m` means minutes)
 - Last year: `from: "utc_now-1y"`, `to: "utc_now"`
 
 Also accept specific ISO 8601 dates if the user provides them.
