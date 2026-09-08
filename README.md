@@ -24,7 +24,7 @@ Restart the Gateway after installing. The plugin's `configSchema` will prompt fo
 /plugin marketplace add balresch/santiment-api-skill
 
 # Install the plugin
-/plugin install santiment-api@balresch-santiment-api-skill
+/plugin install santiment-api@santiment-api
 ```
 
 Then run the setup command to configure your API key:
@@ -57,7 +57,7 @@ A free tier is available with limited rate limits and historical data access.
 | `skills/santiment-graphql/SKILL.md` | Core skill — endpoint, auth, `getMetric` query pattern, dynamic discovery, error handling |
 | `skills/santiment-graphql/references/metrics-catalog.md` | Keyword-to-metric discovery map + 20 curated quick-reference metrics |
 | `skills/santiment-graphql/references/rate-limits.md` | Tier limits, complexity scoring, optimization tips |
-| `skills/santiment-graphql/examples/query-patterns.md` | 5 worked GraphQL examples with curl commands |
+| `skills/santiment-graphql/examples/query-patterns.md` | 8 worked GraphQL examples with curl commands |
 
 ## Links
 
